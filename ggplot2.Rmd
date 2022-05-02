@@ -151,17 +151,17 @@ ggplot(data = alaska_flights,
 jitter_example <- tibble(x = rep(0, 4), y = rep(0, 4))
 
 jittered_plot_1 <- ggplot(data = jitter_example, 
-			  mapping = aes(x = x, y = y)) +
+                          mapping = aes(x = x, y = y)) +
     geom_point() +
     coord_cartesian(xlim = c(-0.025, 0.025),
 		    ylim = c(-0.025, 0.025)) +
     labs(title = "Regular scatterplot")
 
 jittered_plot_2 <- ggplot(data = jitter_example,
-			  mapping = aes(x = x, y = y)) +
+                          mapping = aes(x = x, y = y)) +
     geom_jitter(width = 0.01, height = 0.01) +
     coord_cartesian(xlim = c(-0.025, 0.025), 
-              	    ylim = c(-0.025, 0.025)) +
+		    ylim = c(-0.025, 0.025)) +
     labs(title = "Jittered scatterplot")
 
 jittered_plot_1 + jittered_plot_2
@@ -272,8 +272,8 @@ hist_title <- "Histogram of Hourly Temperature from NYC in 2013"
 ggplot(data = weather, 
        mapping = aes(x = temp)) +
     geom_histogram(binwidth = 10, 
-		   boundary = 70, 
-		   color = "white")
+                   boundary = 70, 
+                   color = "white")
 ```
 
 - Around 5000 of the hourly temperature recordings are between 30&deg;F and 40&deg;F
@@ -340,12 +340,12 @@ ggplot(data = weather,
 
 ```{r hist-bins, message=FALSE, fig.cap= "Setting histogram bins in two ways.", echo=FALSE, purl=FALSE}
 hist_1 <- ggplot(data = weather,
-		 mapping = aes(x = temp)) +
+                 mapping = aes(x = temp)) +
     geom_histogram(bins = 40, color = "white") +
     labs(title = "With 40 bins")
 
 hist_2 <- ggplot(data = weather, 
-		 mapping = aes(x = temp)) +
+                 mapping = aes(x = temp)) +
     geom_histogram(binwidth = 10, color = "white") +
     labs(title = "With binwidth = 10 degrees F")
 
@@ -387,7 +387,7 @@ ggplot(data = weather,
 
 ### Learning Check
 
-What other things do you notice about the faceted plot above?  How does a faceted plot help us see relationships between two variables?
+What other things do you notice about the faceted plot above? How does a faceted plot help us see relationships between two variables?
 
 **Solution**: 
 
@@ -456,17 +456,16 @@ quartiles <- weather %>%
 ```{r nov2, echo=FALSE, fig.cap="Building up a boxplot of November temperatures.", fig.height=3, purl=FALSE}
 boxplot_1 <- base_plot +
     geom_hline(data = five_number_summary, 
-	       aes(yintercept = temp), linetype = "dashed") +
+               aes(yintercept = temp), linetype = "dashed") +
     geom_jitter(width = 0.075, height = 0.5, alpha = 0.1)
 
 boxplot_2 <- base_plot +
     geom_boxplot() +
     geom_hline(data = five_number_summary, 
-	       aes(yintercept = temp), linetype = "dashed") +
+               aes(yintercept = temp), linetype = "dashed") +
     geom_jitter(width = 0.075, height = 0.5, alpha = 0.1)
 
-boxplot_3 <- base_plot +
-    geom_boxplot()
+boxplot_3 <- base_plot + geom_boxplot()
 
 boxplot_1 + boxplot_2 + boxplot_3
 ```
@@ -578,7 +577,7 @@ Boxplots provide a simple way to identify outliers.  Why may outliers be easier 
 fruits <- tibble(fruit = c("apple", "apple", 
 			   "orange", "apple", "orange"))
 fruits_counted <- tibble(fruit = c("apple", "orange"), 
-			 number = c(3, 2))
+                         number = c(3, 2))
 ```
 
 - `fruits` just lists the fruit individually
@@ -728,8 +727,8 @@ ggplot(data = flights,
 
 ```{r facet-bar-vert, fig.cap="Faceted barplot comparing the number of flights by carrier and origin.", fig.height=6, purl=FALSE}
 (month_facet_ncol <- 
-	ggplot(data = flights, 
-	       mapping = aes(x = carrier)) +
+    ggplot(data = flights, 
+           mapping = aes(x = carrier)) +
     geom_bar() +
     facet_wrap(~origin, ncol = 1))
 ```
@@ -775,3 +774,10 @@ ggplot(flights, aes(x = carrier)) +
 
 - Check out RStudio's "Data Visualization with ggplot2" cheatsheet
   - Access this cheatsheet by going to the RStudio Menu Bar -> Help -> Cheatsheets -> "Data Visualization with ggplot2"
+
+### Resources
+
+- [`ggplot2`: Elegant Graphics for Data Analysis](https://ggplot2-book.org/)
+  - Written by the author of `ggplot2` and `tidyverse` packages
+- [R Graphics Cookbook](https://r-graphics.org/)
+  - Provides more than 150 recipes to generate high-quality graphs quickly  
