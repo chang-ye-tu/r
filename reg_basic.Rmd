@@ -20,7 +20,7 @@ classoptions: hyperref, 12pt, a4paper
 
 ### The Fundamental Premise of Data Modeling
 
-* An *outcome variable* $y$, a.k.a *dependent variable* or response variable, and
+* An *outcome variable* $y$, a.k.a. *dependent variable* or response variable
 * An *explanatory/predictor variable* $x$, a.k.a. an *independent variable* or *covariate*
 * $y$ "as a function" of the explanatory/predictor variable $x$
    
@@ -43,10 +43,10 @@ classoptions: hyperref, 12pt, a4paper
   - Possibly to design an intervention to reduce lung cancer incidence in a population, such as targeting smokers of a specific age group with advertising for smoking cessation programs
 - Modeling for prediction: make good predictions of which people will contract lung cancer
 
-### Caveat
+### What we focus on 
 
-- We focus on modeling for explanation 
-- We focus on linear regression first: the relationship between $y$ and $x$ is assumed to be linear
+- Modeling for explanation 
+- Linear regression: the relationship between $y$ and $x$ is assumed to be linear
 
 ### Needed packages
 
@@ -64,7 +64,9 @@ library(mvtnorm)
 library(broom)
 ```
 
-## Problem description  
+## One numerical explanatory variable
+
+### Problem description
 
 - What factors explain differences in instructor teaching evaluation scores?
   - Researchers at UT Austin tried to answer the question
@@ -76,13 +78,13 @@ library(broom)
   - A numerical outcome variable $y$ (the instructor's teaching score) and
   - A single numerical explanatory variable $x$ (the instructor's "beauty" score)
 
-## Exploratory data analysis (EDA) 
+### Exploratory data analysis (EDA) 
 
 - Looking at the raw data values
 - Computing summary statistics
 - Creating data visualizations
    
-### Looking at the raw data values
+#### Looking at the raw data values
 
 ```{r}
 evals_bty <- evals %>%
@@ -110,7 +112,7 @@ evals_bty %>%
     kable_styling(font_size = 16) %>% as.character %>% display_html 
 ```
 
-### Computing summary statistics
+#### Computing summary statistics
 
 ```{r}
 evals_bty %>%
@@ -136,7 +138,7 @@ evals_bty %>% select(score, bty_avg) %>% skim()
 - `p75`: the 75th percentile: the value at which 75% of observations are smaller than it (the *3rd quartile*)
 - `p100`: the 100th percentile: the value at which 100% of observations are smaller than it (the *maximum* value)
 
-#### Correlation coefficient 
+##### Correlation coefficient 
 
 ```{r correlation1, echo=FALSE, fig.cap="Nine different correlation coefficients.", fig.height=2.6, purl=FALSE}
 correlation <- c(-0.9999, -0.9, -0.75, -0.3, 0, 0.3, 0.75, 0.9, 0.9999)
@@ -182,11 +184,11 @@ cor_bty <- evals_bty %>%
     pull()
 ```
 
-### Interesting
+#### Interesting
 
 - [Guess the Correlation](http://guessthecorrelation.com)
 
-### Creating data visualizations
+#### Creating data visualizations
 
 ```{r numxplot1, echo=FALSE, fig.cap="Instructor evaluation scores at UT Austin.", fig.height=4.5, purl=FALSE}
 # Define orange box
@@ -289,7 +291,7 @@ gapminder2007 <- gapminder %>%
 - A numerical outcome variable $y$ (a country's life expectancy)
 - A single categorical explanatory variable $x$ (the continent that the country is a part of)
 
-### Looking at the raw data values
+#### Looking at the raw data values
 
 ```{r}
 glimpse(gapminder2007)
@@ -313,7 +315,7 @@ gapminder2007 %>%
     kable_styling(font_size = 16) %>% as.character %>% display_html 
 ```
 
-### Computing summary statistics
+#### Computing summary statistics
 
 ```{r eval=FALSE}
 gapminder2007 %>%
@@ -340,6 +342,8 @@ ggplot(gapminder2007, aes(x = lifeExp)) +
          title = "Histogram of distribution of worldwide life expectancies") +
     facet_wrap(~continent, nrow = 2))
 ```
+
+#### Creating data visualizations
 
 - An alternative method to visualize the distribution of a numerical variable split by a categorical variable is by a side-by-side boxplot
 - Map `continent` to the $x$-axis and different life expectancies within each continent on the $y$-axis
