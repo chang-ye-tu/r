@@ -1,0 +1,852 @@
+---
+title: 'Multiple Regression'
+date: "`r format(Sys.time(), '%d %B %Y')`" 
+output:
+  html_document:
+    theme: readable
+    highlight: tango
+    toc: true
+  pdf_document:
+    latex_engine: xelatex
+    extra_dependencies:
+      ctex: UTF8
+    number_sections: yes
+classoptions: hyperref, 12pt, a4paper
+---
+
+# Multiple Regression 
+
+### Needed packages 
+
+```{r, eval=FALSE}
+library(tidyverse)
+library(moderndive)
+library(gapminder)
+library(skimr)
+library(ISLR2)
+
+# Packages needed internally
+library(kableExtra)
+library(patchwork)
+```
+
+## One numerical and one categorical explanatory variable
+
+- Instructor evaluation data from UT Austin
+- A numerical outcome variable $y$, the instructor's teaching score, and
+- Two explanatory variables
+  - A numerical explanatory variable $x_1$, the instructor's age
+  - A categorical explanatory variable $x_2$, the instructor's (binary) gender
+
+### Exploratory data analysis
+
+#### Looking at the raw data values
+
+```{r}
+evals_2 <- evals %>%
+    select(ID, score, age, gender) %>%
+    sample_n(5) %>%
+    kable(digits = 3,
+          caption = "A random sample of 5 out of the 463 courses at UT Austin",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+#### Computing summary statistics
+
+```{r, eval =FALSE}
+evals_2 %>% select(score, age, gender) %>% skim()
+```
+- correlation
+
+```{r}
+evals_2 %>% 
+    get_correlation(formula = score ~ age)
+```
+
+#### Creating data visualizations
+
+```{r eval=FALSE}
+ggplot(evals_2, 
+       aes(x = age, y = score, color = gender)) +
+    geom_point() +
+    labs(x = "Age", y = "Teaching Score", color = "Gender") +
+    geom_smooth(method = "lm", se = FALSE)
+```
+
+- There are almost no women faculty over the age of 60 as evidenced by lack of dots above $x$ = 60
+- While both regression lines are negatively sloped with age (i.e., older instructors tend to have lower scores), the slope for age for the female instructors is *more* negative 
+
+### Interaction model 
+  
+```{r, echo=FALSE, purl=FALSE}
+# Wrangle data
+gapminder2007 <- gapminder %>%
+    filter(year == 2007) %>%
+    select(country, lifeExp, continent, gdpPercap)
+
+# Fit regression model:
+lifeExp_model <- lm(lifeExp ~ continent, data = gapminder2007)
+
+# Get regression table and kable output
+get_regression_table(lifeExp_model) %>%
+    kable(digits = 3,
+          caption = "Regression table for life expectancy as a function of continent",
+    	  booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+- Recall the interpretation of the `estimate` column: intercept in Africa; offsets
+
+```{r regtable-interaction, echo=FALSE, purl=FALSE}
+score_model_interaction <- lm(score ~ age * gender, data = evals_2)
+get_regression_table(score_model_interaction) %>%
+    kable(digits = 3,
+          caption = "Regression table for interaction model",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+- Interaction model summary
+
+```{r interaction-summary, echo=FALSE, purl=FALSE}
+options(digits = 4)
+tibble(Gender = c("Female instructors", "Male instructors"),
+       Intercept = c(intercept_female, intercept_male),
+      `Slope for age` = c(slope_female, slope_male)) %>%
+    kable(digits = 4,
+          caption = "Comparison of intercepts and slopes for interaction model",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+options(digits = 3)
+```
+
+Since the slope for age for the female instructors was `r slope_female`, it means that on average, a female instructor who is a year older would have a teaching score that is `r -1*slope_female` units **lower**. For the male instructors, however, the corresponding associated decrease was on average only `r -1*slope_male` units. While both slopes for age were negative, the slope for age for the female instructors is *more negative*. This is consistent with our observation from Figure \@ref(fig:numxcatxplot1), that this model is suggesting that age impacts teaching scores for female instructors more than for male instructors.
+
+Let's now write the equation for our regression lines, which we can use to compute our fitted values $\widehat{y} = \widehat{\text{score}}$.
+
+$$
+\begin{aligned}
+\widehat{y} = \widehat{\text{score}} &= b_0 + b_{\text{age}} \cdot \text{age} + b_{\text{male}} \cdot \mathbb{1}_{\text{is male}}(x) + b_{\text{age,male}} \cdot \text{age} \cdot \mathbb{1}_{\text{is male}}(x)\\
+&= `r intercept_female` `r slope_female` \cdot \text{age} - `r -1*offset_male` \cdot \mathbb{1}_{\text{is male}}(x) + `r offset_slope_interaction` \cdot \text{age} \cdot \mathbb{1}_{\text{is male}}(x)
+\end{aligned}
+$$
+
+$$
+\mathbb{1}_{\text{is male}}(x) = \left\{
+\begin{array}{ll}
+1 & \text{if } \text{instructor } x \text{ is male} \\
+0 & \text{otherwise}\end{array}
+\right.
+$$
+
+Second, let's match coefficients in the previous equation with values in the `estimate` column in our regression table in Table \@ref(tab:regtable-interaction):
+
+- $b_0$ is the `intercept` = `r intercept_female` for the female instructors
+- $b_{\text{age}}$ is the slope for `age` = `r slope_female` for the female instructors
+- $b_{\text{male}}$ is the offset in intercept = `r offset_male` for the male instructors
+- $b_{\text{age,male}}$ is the offset in slope for age = `r offset_slope_interaction` for the male instructors
+
+Let's put this all together and compute the fitted value $\widehat{y} = \widehat{\text{score}}$ for female instructors. Since for female instructors $\mathbb{1}_{\text{is male}}(x)$ = 0, the previous equation becomes
+
+$$
+\begin{aligned}
+\widehat{y} = \widehat{\text{score}} &= `r intercept_female` - `r -1*slope_female` \cdot \text{age} - `r -1*offset_male` \cdot 0 + `r offset_slope_interaction` \cdot \text{age} \cdot 0\\
+&= `r intercept_female` - `r -1*slope_female` \cdot \text{age} - 0 + 0\\
+&= `r intercept_female` - `r -1*slope_female` \cdot \text{age}\\
+\end{aligned}
+$$
+
+which is the equation of the regression line in Figure \@ref(fig:numxcatxplot1) corresponding to the female instructors in Table \@ref(tab:interaction-summary). Correspondingly, since for male instructors $\mathbb{1}_{\text{is male}}(x)$ = 1, the previous equation becomes
+
+$$
+\begin{aligned}
+\widehat{y} = \widehat{\text{score}} &= `r intercept_female` - `r -1*slope_female` \cdot \text{age} - `r -1*offset_male` + `r offset_slope_interaction` \cdot \text{age}\\
+&= (`r intercept_female` - `r -1*offset_male`) + (- `r -1*slope_female` + `r offset_slope_interaction`) * \text{age}\\
+&= `r intercept_male` - `r -1*slope_male` \cdot \text{age}\\
+\end{aligned}
+$$
+
+which is the equation of the regression line in Figure \@ref(fig:numxcatxplot1) corresponding to the male instructors in Table \@ref(tab:interaction-summary).
+
+Before we end this section, we explain why we refer to this type of model as an "interaction model." The $b_{\text{age,male}}$ term in the equation for the fitted value $\widehat{y}$ = $\widehat{\text{score}}$ is what's known in statistical modeling as an "interaction effect." The interaction term corresponds to the `age:gendermale` = `r offset_slope_interaction` in the final row of the regression table in Table \@ref(tab:regtable-interaction).  
+
+We say there is an interaction effect if the associated effect of one variable *depends on the value of another variable*. That is to say, the two variables are "interacting" with each other. Here, the associated effect of the variable age *depends* on the value of the other variable gender. The difference in slopes for age of +`r offset_slope_interaction` of male instructors relative to female instructors shows this. \index{regression!multiple linear!interactions model}
+
+Another way of thinking about interaction effects on teaching scores is as follows. For a given instructor at UT Austin, there might be an associated effect of their age *by itself*, there might be an associated effect of their gender *by itself*, but when age and gender are considered *together* there might be an *additional effect* above and beyond the two individual effects.
+
+### Parallel slopes model
+
+When creating regression models with one numerical and one categorical explanatory variable, we are not just limited to interaction models as we just saw. Another type of model we can use is known as a *parallel slopes* model.\index{parallel slopes model} Unlike interaction models where the regression lines can have different intercepts and different slopes, parallel slopes models still allow for different intercepts but *force* all lines to have the same slope. The resulting regression lines are thus parallel. Let's visualize the best-fitting parallel slopes model to `evals_2`.
+
+Unfortunately, the `geom_smooth()` function in the `ggplot2` package does not have a convenient way to plot parallel slopes models. Evgeni Chasnovski thus created a special purpose function called `geom_parallel_slopes()`\index{moderndive!geom\_parallel\_slopes()} that is included in the `moderndive` package. You won't find `geom_parallel_slopes()` in the `ggplot2` package, but rather the `moderndive` package. Thus, if you want to be able to use it, you will need to load both the `ggplot2` and `moderndive` packages. Using this function, let's now plot the parallel slopes model for teaching score. Notice how the code is identical to the code that produced the visualization of the interaction model in Figure \@ref(fig:numxcatxplot1), but now the `geom_smooth(method = "lm", se = FALSE)` layer is replaced with `geom_parallel_slopes(se = FALSE)`. 
+
+```{r numxcatx-parallel, echo=FALSE, fig.cap="Parallel slopes model of score with age and gender.", fig.height=3.5, purl=FALSE}
+par_slopes <- ggplot(evals_2, 
+		     aes(x = age, y = score, color = gender)) +
+    geom_point() +
+    labs(x = "Age", y = "Teaching Score", color = "Gender") +
+    geom_parallel_slopes(se = FALSE)
+par_slopes
+```
+
+Observe in Figure \@ref(fig:numxcatx-parallel) that we now have parallel lines corresponding to the female and male instructors, respectively: here they have the same negative slope.  This is telling us that instructors who are older will tend to receive lower teaching scores than instructors who are younger. Furthermore, since the lines are parallel, the associated penalty for being older is assumed to be the same for both female and male instructors. 
+
+However, observe also in Figure \@ref(fig:numxcatx-parallel) that these two lines have different intercepts as evidenced by the fact that the line corresponding to the male instructors is higher than the line corresponding to the female instructors. This is telling us that irrespective of age, female instructors tended to receive lower teaching scores than male instructors. 
+
+In order to obtain the precise numerical values of the two intercepts and the single common slope, we once again "fit" the model using the `lm()` "linear model" function and then apply the `get_regression_table()` function. However, unlike the interaction model which had a model formula of the form `y ~ x1 * x2`, our model formula is now of the form `y ~ x1 + x2`. In other words, our two explanatory variables `x1` and `x2` are separated by a `+` sign:
+
+```{r regtable-parallel-slopes, echo=FALSE, purl=FALSE}
+score_model_parallel_slopes <- lm(score ~ age + gender, data = evals_2)
+get_regression_table(score_model_parallel_slopes) %>%
+    kable(digits = 3,
+          caption = "Regression table for parallel slopes model",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+Similarly to the regression table for the interaction model from Table \@ref(tab:regtable-interaction), we have an `intercept` term corresponding to the intercept for the "baseline for comparison" female instructor group and a `gender: male` term corresponding to the *offset* in intercept for the male instructors relative to female instructors. In other words, in Figure \@ref(fig:numxcatx-parallel) the regression line corresponding to the female instructors has an intercept of `r intercept_female_parallel` while the regression line corresponding to the male instructors has an intercept of `r intercept_female_parallel` + `r offset_male_parallel` = `r intercept_female_parallel + offset_male_parallel`. Once again, since there aren't any instructors of age 0, the intercepts only have a mathematical interpretation but no practical one. 
+
+```{r echo=FALSE}
+age_coef <- get_regression_table(score_model_parallel_slopes) %>%
+    filter(term == "age") %>%
+    pull(estimate)
+```
+
+Unlike in Table \@ref(tab:regtable-interaction), however, we now only have a single slope for age of `r age_coef`. This is because the model dictates that both the female and male instructors have a common slope for age. \index{regression!multiple linear!parallel slopes model} This is telling us that an instructor who is a year older than another instructor received a teaching score that is on average `r abs(age_coef)` units *lower*. This penalty for being of advanced age applies equally to both female and male instructors. 
+
+
+```{r parallel-slopes-summary, echo=FALSE, purl=FALSE}
+options(digits = 4)
+tibble(Gender = c("Female instructors", "Male instructors"),
+    Intercept = c(intercept_female_parallel, intercept_male_parallel),
+    `Slope for age` = c(age_coef, age_coef)) %>%
+    kable(digits = 4,
+          caption = "Comparison of intercepts and slope for parallel slopes model",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+options(digits = 3)
+```
+
+Let's now write the equation for our regression lines, which we can use to compute our fitted values $\widehat{y} = \widehat{\text{score}}$.
+
+$$
+\begin{aligned}
+\widehat{y} = \widehat{\text{score}} &= b_0 + b_{\text{age}} \cdot \text{age} + b_{\text{male}} \cdot \mathbb{1}_{\text{is male}}(x)\\
+&= \cdot \text{age} + \cdot \mathbb{1}_{\text{is male}}(x) 
+\end{aligned}
+$$
+
+Let's put this all together and compute the fitted value $\widehat{y} = \widehat{\text{score}}$ for female instructors. Since for female instructors the indicator function $\mathbb{1}_{\text{is male}}(x)$ = 0, the previous equation becomes
+
+
+```{r numxcatx-comparison, fig.width=8, echo=FALSE, fig.cap="Comparison of interaction and parallel slopes models.", purl=FALSE, message=FALSE}
+interaction_plot <- ggplot(evals_2, 
+			   aes(x = age, y = score, color = gender), show.legend = FALSE) +
+  geom_point() +
+  labs(x = "Age", y = "Teaching Score", title = "Interaction model") +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "none")
+parallel_slopes_plot <- ggplot(evals_2, aes(x = age, y = score, color = gender), show.legend = FALSE) +
+  geom_point() +
+  labs(x = "Age", y = "Teaching Score", title = "Interaction model") +
+  geom_parallel_slopes(se = FALSE) +
+  labs(x = "Age", y = "Teaching Score", title = "Parallel slopes model") +
+  theme(axis.title.y = element_blank())
+
+interaction_plot + parallel_slopes_plot
+```
+
+## Two numerical explanatory variables
+
+Let's now switch gears and consider multiple regression models where instead of one numerical and one categorical explanatory variable, we now have two numerical explanatory variables. The dataset we'll use is from [*An Introduction to Statistical Learning with Applications in R (ISLR)*](http://www-bcf.usc.edu/~gareth/ISL/), an intermediate-level textbook on statistical and machine learning [@islr2017]. Its accompanying `ISLR` R package contains the datasets to which the authors apply various machine learning methods. 
+
+One frequently used dataset in this book is the `Credit` dataset, where the outcome variable of interest is the credit card debt of `r Credit %>% nrow()` individuals. Other variables like income, credit limit, credit rating, and age are included as well. Note that the `Credit` data is not based on real individuals' financial information, but rather is a simulated dataset used for educational purposes. 
+
+In this section, we'll fit a regression model where we have 
+
+- A numerical outcome variable $y$, the cardholder's credit card debt
+- Two explanatory variables:
+  - One numerical explanatory variable $x_1$, the cardholder's credit limit
+  - Another numerical explanatory variable $x_2$, the cardholder's income (in thousands of dollars).
+
+### Exploratory data analysis
+
+Let's load the `Credit` dataset\index{R packages!ISLR!Credit data frame}. To keep things simple let's `select()` the subset of the variables we'll consider in this chapter, and save this data in the new data frame `credit_2`. Notice our slightly different use of the `select()` verb here than we introduced in Subsection \@ref(select). For example, we'll select the `Balance` variable from `Credit` but then save it with a new variable name `debt`. We do this because here the term "debt" is easier to interpret than "balance."
+
+```{r, message=FALSE}
+credit_2 <- Credit %>% as_tibble() %>% 
+  select(ID, debt = Balance, credit_limit = Limit, 
+         income = Income, credit_rating = Rating, age = Age)
+```
+
+You can observe the effect of our use of `select()` in the first common step of an exploratory data analysis: looking at the raw values either in RStudio's spreadsheet viewer or by using `glimpse()`.
+
+```{r}
+glimpse(credit_2)
+```
+
+```{r echo=FALSE, purl=FALSE}
+n_credit_2 <- credit_2 %>% nrow()
+```
+
+Furthermore, let's look at a random sample of five out of the `r n_credit_2` credit card holders in Table \@ref(tab:model3-data-preview). Once again, note that due to the random nature of the sampling, you will likely end up with a different subset of five rows.
+
+```{r, eval=FALSE}
+credit_2 %>% sample_n(size = 5)
+```
+```{r model3-data-preview, echo=FALSE, purl=FALSE}
+credit_2 %>%
+  sample_n(5) %>%
+  kable(
+    digits = 3,
+    caption = "Random sample of 5 credit card holders",
+    booktabs = TRUE,
+    linesep = ""
+  ) %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+Now that we've looked at the raw values in our `credit_2` data frame and got a sense of the data, let's move on to the next common step in an exploratory data analysis: computing summary statistics. Let's use the `skim()` function from the `skimr` package, being sure to only `select()` the columns of interest for our model:
+
+```{r, eval=FALSE}
+credit_2 %>% select(debt, credit_limit, income) %>% skim()
+```
+
+Observe the summary statistics for the outcome variable `debt`: the mean and median credit card debt are \$520.01 and \$459.50, respectively, and that 25% of card holders had debts of \$68.75 or less. Let's now look at one of the explanatory variables `credit_limit`: the mean and median credit card limit are \$4735.6 and \$4622.50, respectively, while 75% of card holders had incomes of \$57,470 or less.
+
+Since our outcome variable `debt` and the explanatory variables `credit_limit` and `income` are numerical, we can compute the correlation coefficient between the different possible pairs of these variables. First, we can run the `get_correlation()` command as seen in Subsection \@ref(model1EDA) twice, once for each explanatory variable:
+
+```{r, eval=FALSE}
+credit_2 %>% get_correlation(debt ~ credit_limit)
+credit_2 %>% get_correlation(debt ~ income)
+```
+
+Or we can simultaneously compute them by returning a *correlation matrix* which we display in Table \@ref(tab:model3-correlation). \index{correlation (coefficient)} We can see the correlation coefficient for any pair of variables by looking them up in the appropriate row/column combination.
+
+```{r model3-correlation, echo=FALSE, purl=FALSE}
+credit_2 %>%
+    select(debt, credit_limit, income) %>%
+    cor() %>%
+    kable(digits = 3,
+          caption = "Correlation coefficients between credit card debt, credit limit, and income",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+For example, the correlation coefficient of:
+
+1. `debt` with itself is 1 as we would expect based on the definition of the correlation coefficient.
+1. `debt` with `credit_limit` is 0.862. This indicates a strong positive linear relationship, which makes sense as only individuals with large credit limits can accrue large credit card debts.
+1. `debt` with `income` is 0.464. This is suggestive of another positive linear relationship, although not as strong as the relationship between `debt` and `credit_limit`.
+1. As an added bonus, we can read off the correlation coefficient between the two explanatory variables of `credit_limit` and `income` as 0.792. 
+
+We say there is a high degree of *collinearity*\index{collinearity} between the `credit_limit` and `income` explanatory variables. Collinearity (or multicollinearity) is a phenomenon where one explanatory variable in a multiple regression model is highly correlated with another. 
+
+So in our case since `credit_limit` and `income` are highly correlated, if we knew someone's `credit_limit`, we could make pretty good guesses about their `income` as well. Thus, these two variables provide somewhat redundant information. However, we'll leave discussion on how to work with collinear explanatory variables to a more intermediate-level book on regression modeling.
+
+```{r, eval=FALSE}
+ggplot(credit_2, aes(x = credit_limit, y = debt)) +
+    geom_point() +
+    labs(x = "Credit limit (in $)", y = "Credit card debt (in $)", 
+         title = "Debt and credit limit") +
+    geom_smooth(method = "lm", se = FALSE)
+
+ggplot(credit_2, aes(x = income, y = debt)) +
+    geom_point() +
+    labs(x = "Income (in $1000)", y = "Credit card debt (in $)", 
+         title = "Debt and income") +
+    geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r 2numxplot1, echo=FALSE, fig.cap="Relationship between credit card debt and credit limit/income.", fig.height=3.2, purl=FALSE, message=FALSE}
+model3_balance_vs_limit_plot <- ggplot(credit_2, 
+				       aes(x = credit_limit, y = debt)) +
+    geom_point() +
+    labs(x = "Credit limit (in $)", y = "Credit card debt (in $)",
+         title = "Debt and credit limit") +
+    geom_smooth(method = "lm", se = FALSE) +
+    scale_y_continuous(limits = c(0, 2000))
+
+model3_balance_vs_income_plot <- ggplot(credit_2, aes(x = income, y = debt)) +
+    geom_point() +
+    labs(x = "Income (in $1000)", y = "Credit card debt (in $)",
+         title = "Debt and income") +
+    geom_smooth(method = "lm", se = FALSE) +
+    scale_y_continuous(limits = c(0, 2000)) +
+    theme(axis.title.y = element_blank())
+
+model3_balance_vs_limit_plot + model3_balance_vs_income_plot
+```
+
+Observe there is a positive relationship between credit limit and credit card debt: as credit limit increases so also does credit card debt.  This is consistent with the strongly positive correlation coefficient of 0.862 we computed earlier. In the case of income, the positive relationship doesn't appear as strong, given the weakly positive correlation coefficient of 0.464. 
+
+However, the two plots in Figure \@ref(fig:2numxplot1) only focus on the relationship of the outcome variable with each of the two explanatory variables *separately*. To visualize the *joint* relationship of all three variables simultaneously, we need a 3-dimensional (3D) scatterplot as seen in Figure \@ref(fig:3D-scatterplot). Each of the `r n_credit_2` observations in the `credit_2` data frame are marked with a point where
+
+- The numerical outcome variable $y$ `debt` is on the vertical axis
+- The two numerical explanatory variables, $x_1$ `income` and $x_2$ `credit_limit`, are on the two axes that form the bottom plane
+
+```{r 3D-scatterplot, echo=FALSE, fig.cap="3D scatterplot and regression plane.", purl=FALSE, out.width = "75%", purl=FALSE}
+include_graphics("images/credit_card_balance_regression_plane.png")
+```
+
+Furthermore, we also include the *regression plane*\index{regression!regression plane}. Recall from Subsection \@ref(leastsquares) that regression lines are "best-fitting" in that of all possible lines we can draw through a cloud of points, the regression line minimizes the *sum of squared residuals*\index{sum of squared residuals}. This concept also extends to models with two numerical explanatory variables. The difference is instead of a "best-fitting" line, we now have a "best-fitting" plane that similarly minimizes the sum of squared residuals. Head to [this website](https://moderndive.com/regression-plane) to open an interactive version of this plot in your browser.
+
+```{r, eval=FALSE, echo=FALSE, purl=FALSE}
+# Source code for above 3D scatterplot & regression plane.
+library(plotly)
+
+# setup hideous grid required by plotly
+model_lm <- lm(debt ~ income + credit_limit, data = credit_2)
+x_grid <- seq(from = min(credit_2$income), to = max(credit_2$income), length = 100)
+y_grid <- seq(from = min(credit_2$credit_limit), to = max(credit_2$credit_limit), length = 200)
+z_grid <- expand.grid(x_grid, y_grid) %>%
+    tbl_df() %>%
+    rename(x_grid = Var1, y_grid = Var2) %>%
+    mutate(z = coef(model_lm)[1] + coef(model_lm)[2] * x_grid + coef(model_lm)[3] * y_grid) %>%
+    .[["z"]] %>%
+    matrix(nrow = length(x_grid)) %>%
+    t()
+
+# Plot points
+plot_ly() %>%
+    add_markers(x = credit_2$income,
+                y = credit_2$credit_limit,
+                z = credit_2$debt,
+                hoverinfo = "text",
+                text = ~ paste(
+      "x1 - Income: ",
+      credit_2$income,
+      "</br> x2 - Credit Limit: ",
+      credit_2$credit_limit,
+      "</br> y - Debt: ",
+      credit_2$debt)) %>%
+  # Label axes
+  layout(scene = list(
+         xaxis = list(title = "x1 - Income (in $10K)"),
+         yaxis = list(title = "x2 - Credit Limit ($)"),
+         zaxis = list(title = "y - Debt ($)"))) %>%
+  # Add regression plane
+  add_surface(x = x_grid,
+              y = y_grid,
+              z = z_grid)
+```
+
+### Learning Check
+
+Conduct a new exploratory data analysis with the same outcome variable $y$ `debt` but with `credit_rating` and `age` as the new explanatory variables $x_1$ and $x_2$. What can you say about the relationship between a credit card holder's debt and their credit rating and age?
+
+```{r}
+```
+
+### Regression plane
+
+Let's now fit a regression model and get the regression table corresponding to the regression plane in Figure \@ref(fig:3D-scatterplot). To keep things brief in this subsection, we won't consider an interaction model for the two numerical explanatory variables `income` and `credit_limit` like we did in Subsection \@ref(model4interactiontable) using the model formula `score ~ age * gender`. Rather we'll only consider a model fit with a formula of the form `y ~ x1 + x2`. Confusingly, however, since we now have a regression plane instead of multiple lines, the label "parallel slopes" doesn't apply when you have two numerical explanatory variables. Just as we have done multiple times throughout Chapters \@ref(regression) and this chapter, the regression table for this model using our two-step process is in Table \@ref(tab:model3-table-output).
+
+```{r model3-table-output, echo=FALSE, purl=FALSE}
+debt_model <- lm(debt ~ credit_limit + income, data = credit_2)
+credit_line <- get_regression_table(debt_model) %>%
+    pull(estimate)
+get_regression_table(debt_model) %>%
+    kable(digits = 3,
+          caption = "Multiple regression table",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+- Fit the linear regression model using `lm(y ~ x1 + x2, data)` and save it in `debt_model`
+- Get the regression table by applying `get_regression_table()` from `moderndive` to `debt_model`
+
+Let's interpret the three values in the `estimate` column. First, the `intercept` value is -\$385.179. This intercept represents the credit card debt for an individual who has  `credit_limit` of \$0 and `income` of \$0. In our data, however, the intercept has no practical interpretation since no individuals had `credit_limit` or `income` values of \$0. Rather, the intercept is used to situate the regression plane in 3D space. 
+
+Second, the `credit_limit` value is \$0.264. Taking into account all the other explanatory variables in our model, for every increase of one dollar in `credit_limit`, there is an associated increase of on average \$0.26 in credit card debt. Just as we did in Subsection \@ref(model1table), we are cautious *not* to imply causality as we saw in Subsection \@ref(correlation-is-not-causation) that "correlation is not necessarily causation." We do this merely stating there was an *associated* increase. 
+
+Furthermore, we preface our interpretation with the statement, "taking into account all the other explanatory variables in our model."  Here, by all other explanatory variables we mean `income`. We do this to emphasize that we are now jointly interpreting the associated effect of multiple explanatory variables in the same model at the same time. 
+
+Third, `income` = -\$7.66. Taking into account all other explanatory variables in our model, for every increase of one unit of `income` (\$1000 in actual income), there is an associated decrease of, on average, \$7.66 in credit card debt.
+
+Putting these results together, the equation of the regression plane that gives us fitted values $\widehat{y}$ = $\widehat{\text{debt}}$ is:
+
+$$
+\begin{align}
+  \widehat{y} &= \beta_0 + \beta_1\,x_1 +  \beta_2\,x_2\\
+  \widehat{\text{debt}} &= \beta_0 + \beta_{\text{limit}}\,\text{limit} + \beta_{\text{income}}\,\text{income}\\
+                        &= -385.179 + 0.263\,\text{limit} - 7.663\,\text{income}
+\end{align}
+$$
+
+Recall however in the right-hand plot of Figure \@ref(fig:2numxplot1) that when plotting the relationship between `debt` and `income` in isolation, there appeared to be a *positive* relationship. In the last discussed multiple regression, however, when *jointly* modeling the relationship between `debt`, `credit_limit`, and `income`, there appears to be a *negative* relationship of `debt` and `income` as evidenced by the negative slope for `income` of -\$7.663.  What explains these contradictory results? A phenomenon known as *Simpson's Paradox*\index{Simpson's Paradox}, whereby overall trends that exist in aggregate either disappear or reverse when the data are broken down into groups. In Subsection \@ref(simpsonsparadox) we elaborate on this idea by looking at the relationship between `credit_limit` and credit card `debt`, but split along different `income` brackets.
+
+### Learning Check
+
+Fit a new simple linear regression using `lm(debt ~ credit_rating + age, data = credit_2)` where `credit_rating` and `age` are the new numerical explanatory variables $x_1$ and $x_2$. Get information about the "best-fitting" regression plane from the regression table by applying the `get_regression_table()` function. How do the regression results match up with the results from your previous exploratory data analysis? 
+
+### Observed/fitted values and residuals
+
+Let's also compute all fitted values and residuals for our regression model using the `get_regression_points()` function and present only the first 10 rows of output in Table \@ref(tab:model3-points-table). Remember that the coordinates of each of the points in our 3D scatterplot in Figure \@ref(fig:3D-scatterplot) can be found in the `income`, `credit_limit`, and `debt` columns. The fitted values on the regression plane are found in the `debt_hat` column and are computed using our equation for the regression plane in the previous section:
+
+$$
+\begin{aligned}
+\widehat{y} = \widehat{\text{debt}} &= -385.179 + 0.263\,\text{limit} - 7.663\,\text{income}
+\end{aligned}
+$$
+
+```{r model3-points-table, echo=FALSE, purl=FALSE}
+set.seed(76)
+regression_points <- get_regression_points(debt_model)
+regression_points %>%
+    slice(1:10) %>%
+    kable(digits = 3,
+          caption = "Regression points (First 10 credit card holders out of 400)",
+          booktabs = TRUE,
+          linesep = "") %>%
+    kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+## Related topics
+
+### Model selection using visualizations
+
+When should we use an interaction model versus a parallel slopes model? Recall in Sections \@ref(model4interactiontable) and \@ref(model4table) we fit both interaction and parallel slopes models for the outcome variable $y$ (teaching score) using a numerical explanatory variable $x_1$ (age) and a categorical explanatory variable $x_2$ (gender recorded as a binary variable). We compared these models in Figure \@ref(fig:numxcatx-comparison), which we display again now. 
+
+```{r recall-parallel-vs-interaction, fig.height=3.5, echo=FALSE, fig.cap="Previously seen comparison of interaction and parallel slopes models.", purl=FALSE, message=FALSE}
+grey_interaction_plot <- interaction_plot + scale_color_grey()
+grey_parallel_slopes_plot <- parallel_slopes_plot + scale_color_grey()
+grey_interaction_plot + grey_parallel_slopes_plot
+```
+
+A lot of you might have asked yourselves: "Why would I force the lines to have parallel slopes (as seen in the right-hand plot) when they clearly have different slopes (as seen in the left-hand plot)?".
+
+The answer lies in a philosophical principle known as "Occam's Razor." It states that, "all other things being equal, simpler solutions are more likely to be correct than complex ones." When viewed in a modeling framework, Occam's Razor \index{Occam's Razor} can be restated as, "all other things being equal, simpler models are to be preferred over complex ones." In other words, we should only favor the more complex model if the additional complexity is *warranted*. 
+
+Let's revisit the equations for the regression line for both the interaction and parallel slopes model:
+
+$$
+\begin{aligned}
+\text{Interaction} &: \widehat{y} = \widehat{\text{score}} = b_0 + b_{\text{age}} \cdot \text{age} + b_{\text{male}} \cdot \mathbb{1}_{\text{is male}}(x) + \\
+& \qquad b_{\text{age,male}} \cdot \text{age} \cdot \mathbb{1}_{\text{is male}}\\
+\text{Parallel slopes} &: \widehat{y} = \widehat{\text{score}} = b_0 + b_{\text{age}} \cdot \text{age} + b_{\text{male}} \cdot \mathbb{1}_{\text{is male}}(x)
+\end{aligned}
+$$
+
+The interaction model is "more complex" in that there is an additional $b_{\text{age,male}} \cdot \text{age} \cdot \mathbb{1}_{\text{is male}}$ interaction term in the equation not present for the parallel slopes model. Or viewed alternatively, the regression table for the interaction model in Table \@ref(tab:regtable-interaction) has *four* rows, whereas the regression table for the parallel slopes model in Table \@ref(tab:regtable-parallel-slopes) has *three* rows. The question becomes: "Is this additional complexity warranted?". In this case, it can be argued that this additional complexity is warranted, as evidenced by the clear x-shaped pattern of the two regression lines in the left-hand plot of Figure \@ref(fig:recall-parallel-vs-interaction).
+
+However, let's consider an example where the additional complexity might *not* be warranted. Let's consider the `MA_schools` data included in the `moderndive` package which contains 2017 data on Massachusetts public high schools provided by the Massachusetts Department of Education. For more details, read the help file for this data by running `?MA_schools` in the console.
+
+
+- The numerical outcome variable $y$
+  - Average SAT math score for a given high school
+- A numerical explanatory variable $x_1$ 
+  - The percentage of that high school's student body that are economically disadvantaged
+- A categorical explanatory variable $x_2$ 
+  - The school size as measured by enrollment
+  - small (13-341 students), medium (342-541 students), and large (542-4264 students)
+
+Let's create visualizations of both the interaction and parallel slopes model once again and display the output in Figure \@ref(fig:numxcatx-comparison-2). Recall from Subsection \@ref(model4table) that the `geom_parallel_slopes()` function is a special purpose function included in the `moderndive` package, since the `geom_smooth()` method in the `ggplot2` package does not have a convenient way to plot parallel slopes models.
+
+```{r numxcatx-comparison-2, fig.height=3.4, echo=FALSE, fig.cap="Comparison of interaction and parallel slopes models for Massachusetts schools.", purl=FALSE, message=FALSE}
+p1 <- ggplot(MA_schools, 
+	     aes(x = perc_disadvan, y = average_sat_math, color = size)) +
+    geom_point(alpha = 0.25) +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(x = "Percent economically disadvantaged", y = "Math SAT Score",
+         color = "School size", title = "Interaction model") +
+    theme(legend.position = "none")
+p2 <- ggplot(MA_schools, 
+	     aes(x = perc_disadvan, y = average_sat_math, color = size)) +
+    geom_point(alpha = 0.25) +
+    geom_parallel_slopes(se = FALSE) + 
+    labs(x = "Percent economically disadvantaged", y = "Math SAT Score",
+         color = "School size", title = "Parallel slopes model") +
+    theme(axis.title.y = element_blank())
+p1 + p2
+```
+
+Look closely at the left-hand plot of Figure \@ref(fig:numxcatx-comparison-2) corresponding to an interaction model. While the slopes are indeed different, they do not differ *by much* and are nearly identical. Now compare the left-hand plot with the right-hand plot corresponding to a parallel slopes model. The two models don't appear all that different. So in this case, it can be argued that the additional complexity of the interaction model is *not warranted*. Thus following Occam's Razor, we should prefer the "simpler" parallel slopes model. Let's explicitly define what "simpler" means in this case. Let's compare the regression tables for the interaction and parallel slopes models in Tables \@ref(tab:model2-interaction) and \@ref(tab:model2-parallel-slopes). 
+
+- interaction model
+
+```{r model2-interaction, echo=FALSE, purl=FALSE}
+model_2_interaction <- lm(average_sat_math ~ perc_disadvan * size,
+			  data = MA_schools)
+get_regression_table(model_2_interaction) %>%
+  kable(digits = 3,
+        caption = "Interaction model regression table",
+        booktabs = TRUE,
+        linesep = "") %>%
+  kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+- parallel slopes model
+
+```{r model2-parallel-slopes, echo=FALSE, purl=FALSE}
+model_2_parallel_slopes <- lm(average_sat_math ~ perc_disadvan + size,
+                              data = MA_schools)
+get_regression_table(model_2_parallel_slopes) %>%
+  kable(digits = 3,
+        caption = "Parallel slopes regression table",
+        booktabs = TRUE,
+        linesep = "") %>%
+  kable_styling(font_size = 16) %>% as.character %>% display_html 
+```
+
+Observe how the regression table for the interaction model has 2 more rows (6 versus 4). This reflects the additional "complexity" of the interaction model over the parallel slopes model. 
+
+Furthermore, note in Table \@ref(tab:model2-interaction) how the *offsets for the slopes* `perc_disadvan:sizemedium` being 0.146 and `perc_disadvan:sizelarge` being 0.189 are small relative to the *slope for the baseline group* of small schools of $-2.932$. In other words, all three slopes are similarly negative: $-2.932$ for small schools, $-2.786$ $(=-2.932 + 0.146)$ for medium schools, and $-2.743$ $(=-2.932 + 0.189)$ for large schools. These results are suggesting that irrespective of school size, the relationship between average math SAT scores and the percent of the student body that is economically disadvantaged is similar and, alas, quite negative.
+
+What you have just performed is a rudimentary *model selection*\index{model selection}: choosing which model fits data best among a set of candidate models. The model selection we performed used the "eyeball test": qualitatively looking at visualizations to choose a model. In the next subsection, you'll once again perform the same model selection, but this time using a numerical approach via the $R^2$ (pronounced "R-squared") value. 
+
+<!--
+TODO: Make this into a learning check
+Given that intercepts in the parallel slopes model in the right-hand plot of Figure \@ref(fig:numxcatx-comparison-2) are also similar as well, it can be argued that an even better model is one without the categorical variable school size. 
+-->
+
+
+### Model selection using R-squared
+
+At the end of the previous section in Figure \@ref(fig:numxcatx-comparison-2) you compared an interaction model with a parallel slopes model, where both models attempted to explain $y$ = the average math SAT score for various high schools in Massachusetts. In Tables \@ref(tab:model2-interaction) and \@ref(tab:model2-parallel-slopes), we observed that the interaction model was "more complex" in that the regression table had 6 rows versus the 4 rows of the parallel slopes model. 
+
+Most importantly however, when comparing the left and right-hand plots of Figure \@ref(fig:numxcatx-comparison-2), we observed that the three lines corresponding to small, medium, and large high schools were not that different. Given this similarity, we stated it could be argued that the "simpler" parallel slopes model should be favored. 
+
+In this section, we'll mimic the model selection we just performed using the qualitative "eyeball test", but this time using a numerical and quantitative approach. Specifically, we'll use the $R^2$ summary statistic (pronounced "R-squared"), also called the "coefficient of determination". But first, we must introduce one new concept: the *variance* of a numerical variable. 
+
+We've previously studied two summary statistics of the *spread* (or *variation*) of a numerical variable: the standard deviation when studying the normal distribution in \@ref(appendix-normal-curve) and the interquartile range (IQR) when studying boxplots in Section \@ref(geomboxplot). We now introduce a third summary statistic of spread: the *variance*. The variance is merely the standard deviation squared and it can be computed in R using the `var()` summary function within `summarize()`. If you would like to see the formula, see \@ref(appendix-sd-variance). 
+
+Recall that to get: 1) the observed values $y$, 2) the fitted values $\widehat{y}$ from a regression model, and 3) the resulting residuals $y - \widehat{y}$, we can apply the `get_regression_points()` function our saved model, in this case `model_2_interaction`:
+
+```{r}
+get_regression_points(model_2_interaction) 
+```
+
+Let's now use the `var()` summary function within a `summarize()` to compute the variance of these three terms:
+
+```{r}
+get_regression_points(model_2_interaction) %>% 
+  summarize(var_y = var(average_sat_math), 
+                      var_y_hat = var(average_sat_math_hat), 
+                      var_residual = var(residual))
+```
+
+Observe that the variance of $y$ is equal to the variance of $\widehat{y}$ plus the variance of the residuals. But what do these three terms tell us individually?
+
+First, the variance of $y$ (denoted as $var(y)$) tells us how much do Massachusetts high schools differ in average math SAT scores. The goal of regression modeling is to fit a model that hopefully *explains* this variation. In other words, we want to understand what factors explain why certain schools have high math SAT scores, while others have low scores. This is independent of the model; this is just data. In other words, whether we fit an interaction or parallel slopes model, $var(y)$ remains the same. 
+
+Second, the variance of $\widehat{y}$ (denoted as $var(\widehat{y})$) tells us how much the fitted values from our interaction model vary. That is to say, after accounting for (1) the percentage of the study body that is socioeconomically disadvantaged and (2) school size in an interaction model, how much do our model's explanations of average math SAT scores vary?
+
+Third, the variance of the residuals tells us how much do "the left-overs" from the model vary. Observe how the points in the left-hand plot of Figure \@ref(fig:numxcatx-comparison-2) scatter around the three lines. Say instead all the points fell *exactly* on one of the three lines. Then all residuals would be zero and hence the variance of the residuals would be zero. 
+
+We're now ready to introduce $R^2$:
+
+$$
+R^2 = \frac{var(\widehat{y})}{var(y)}
+$$
+
+It is *the proportion of the spread/variation of the outcome variable $y$ that is explained by our model*, where our model's explanatory power is embedded in the fitted values $\widehat{y}$. Furthermore, since it can be mathematically proven that $0 \leq var(\widehat{y}) \leq var(y)$ (a fact we leave for an advanced class on regression), we are guaranteed that:
+
+$$
+0 \leq R^2 \leq 1
+$$
+
+$R^2$ can be interpreted as follows:
+
+1. $R^2$ values of 0 tell us that our model explains 0% of the variation in $y$. Say we fit a model to the Massachusetts high school data and obtained $R^2 = 0$. This would be telling us that the combination of explanatory variables $x$ we used and model form we chose (interaction or parallel slopes) tell us *nothing* about average math SAT scores. The model is a poor fit.
+1. $R^2$ values of 1 tell us that our model explains 100% of the variation in $y$. Say we fit a model to the Massachusetts high school data and obtained $R^2 = 1$. This would be telling us that the combination of explanatory variables $x$ we used and model form we chose (interaction or parallel slopes) tell us *everything we need to know* about average math SAT scores. 
+
+In practice however, $R^2$ values of 1 almost never occur. Think about it in the context of Massachusetts high schools. There are an infinite number of factors that influence why certain high schools perform well on SAT's on average while others don't perform well. The idea that a human-designed statistical model can capture all the heterogeneity of all high school students in Massachusetts is bordering on hubris. However, even if such models are not perfect, they may still prove useful in determining educational policy. A general principle of modeling we should keep in mind is a famous quote by eminent statistician George Box: ["All models are wrong, but some are useful."](https://jamesclear.com/all-models-are-wrong)
+
+Let's repeat the above calculations for the parallel slopes model and compare them in Table \@ref(tab:model2-r-squared).
+
+```{r model2-r-squared, echo=FALSE}
+variances_interaction <- get_regression_points(model_2_interaction) %>% 
+  summarize(var_y = var(average_sat_math), 
+                      var_y_hat = var(average_sat_math_hat), 
+                      var_residual = var(residual)) %>% 
+  mutate(model = "Interaction", r_squared = var_y_hat/var_y)
+variances_parallel_slopes <- get_regression_points(model_2_parallel_slopes) %>% 
+  summarize(var_y = var(average_sat_math), 
+                      var_y_hat = var(average_sat_math_hat), 
+                      var_residual = var(residual)) %>% 
+  mutate(model = "Parallel slopes", r_squared = var_y_hat/var_y)
+
+bind_rows(
+  variances_interaction,
+  variances_parallel_slopes
+) %>% 
+  select(model, var_y, var_y_hat, var_residual, r_squared) %>% 
+  knitr::kable(
+    digits = 3,
+    caption = "Comparing variances from interaction and parallel slopes models for MA school data", 
+    booktabs = TRUE,
+    linesep = ""
+  ) %>% 
+  kable_styling(font_size = 16)
+```
+
+Observe how the $R^2$ values are near identical at around `r variances_parallel_slopes %>% pull(r_squared)` = `r variances_parallel_slopes %>% pull(r_squared) %>% "*"(100) %>% round(1)`%. In other words, the *additional complexity* of the interaction model only improves our $R^2$ value by a near zero amount. Thus, we are inclined to favor the "simpler" parallel slopes model.
+
+Now let's repeat this $R^2$ comparison between interaction and parallel slopes model for our models of $y$ = teaching score for UT Austin professors which you visually compared in Figure \@ref(fig:recall-parallel-vs-interaction). We compare these values in Table \@ref(tab:model1-r-squared)
+
+```{r model1-r-squared, echo=FALSE}
+variances_interaction <- get_regression_points(score_model_interaction) %>% 
+  summarize(var_y = var(score), var_y_hat = var(score_hat), var_residual = var(residual)) %>% 
+  mutate(model = "Interaction", r_squared = var_y_hat/var_y)
+variances_parallel_slopes <- get_regression_points(score_model_parallel_slopes) %>% 
+  summarize(var_y = var(score), var_y_hat = var(score_hat), var_residual = var(residual)) %>% 
+  mutate(model = "Parallel slopes", r_squared = var_y_hat/var_y)
+
+bind_rows(
+  variances_interaction,
+  variances_parallel_slopes
+) %>% 
+  select(model, var_y, var_y_hat, var_residual, r_squared) %>% 
+  knitr::kable(
+    digits = 3,
+    caption = "Comparing variances from interaction and parallel slopes models for UT Austin data", 
+    booktabs = TRUE,
+    linesep = ""
+  ) %>% 
+  kable_styling(font_size = 16)
+```
+
+Observe how the $R^2$ values are now very different! In other words, since the *additional complexity* of the interaction model over the parallel slopes model improves our $R^2$ value by a relatively large amount (`r variances_interaction$r_squared` versus `r variances_parallel_slopes$r_squared`, which is an increase of about `r round(100*((variances_interaction$r_squared)/(variances_parallel_slopes$r_squared)-1), 1)`%), it could be argued that the additional complexity is warranted. 
+
+As a final note, we can also use the third of our `get_regression()` wrapper functions, `get_regression_summaries()`, to quickly automate calculating $R^2$ for both the interaction and parallels slopes models for $y$ = average math SAT score for Massachusetts high schools.
+
+```{r}
+# R-squared for interaction model:
+get_regression_summaries(model_2_interaction)
+# R-squared for parallel slopes model:
+get_regression_summaries(model_2_parallel_slopes)
+```
+
+### Correlation coefficient
+
+Recall from Table \@ref(tab:model3-correlation) that the correlation coefficient\index{correlation (coefficient)} between `income` in thousands of dollars and credit card `debt` was 0.464. What if instead we looked at the correlation coefficient between `income` and credit card `debt`, but where `income` was in dollars and not thousands of dollars? This can be done by multiplying `income` by 1000.
+
+```{r, eval=FALSE}
+credit_2 %>% select(debt, income) %>% 
+  mutate(income = income * 1000) %>% 
+  cor()
+```
+```{r cor-credit-2, echo=FALSE, purl=FALSE}
+credit_2 %>%
+  select(debt, income) %>%
+  mutate(income = income * 1000) %>%
+  cor() %>%
+  kable(
+    digits = 3,
+    caption = "Correlation between income (in dollars) and credit card debt",
+    booktabs = TRUE,
+    linesep = ""
+  ) %>%
+  kable_styling(font_size = 16)
+```
+
+We see it is the same! We say that the correlation coefficient is *invariant to linear transformations*. The correlation between $x$ and $y$ will be the same as the correlation between $a\cdot x + b$ and $y$ for any numerical values $a$ and $b$.
+
+### Simpson's Paradox
+
+Recall in Section \@ref(model3), we saw the two seemingly contradictory results when studying the relationship between credit card `debt` and `income`. On the one hand, the right hand plot of Figure \@ref(fig:2numxplot1) suggested that the relationship between credit card `debt` and `income` was *positive*. We re-display this in Figure \@ref(fig:2numxplot1-repeat).
+
+```{r 2numxplot1-repeat, echo=FALSE, fig.cap="Relationship between credit card debt and income.", fig.height=1.8, message=FALSE, purl=FALSE}
+model3_balance_vs_income_plot
+```
+
+On the other hand, the multiple regression results in Table \@ref(tab:model3-table-output) suggested that the relationship between `debt` and `income` was *negative*. We re-display this information in Table \@ref(tab:model3-table-output-repeat).
+
+```{r model3-table-output-repeat, echo=FALSE, purl=FALSE}
+debt_model <- lm(debt ~ credit_limit + income, data = credit_2)
+credit_line <- get_regression_table(debt_model) %>%
+  pull(estimate)
+get_regression_table(debt_model) %>%
+  kable(
+    digits = 3,
+    caption = "Multiple regression results",
+    booktabs = TRUE,
+    linesep = ""
+  ) %>%
+  kable_styling(font_size = 16)
+```
+
+Observe how the slope for `income` is $-7.663$ and, most importantly for now, it is negative. This contradicts our observation in Figure \@ref(fig:2numxplot1-repeat) that the relationship is positive. How can this be? Recall the interpretation of the slope for `income` in the context of a multiple regression model: *taking into account all the other explanatory variables in our model*, for every increase of one unit in `income` (i.e., $1000), there is an associated decrease of on average \$7.663 in `debt`.
+
+In other words, while in *isolation*, the relationship between `debt` and `income` may be positive, when taking into account `credit_limit` as well, this relationship becomes negative. These seemingly paradoxical results are due to a phenomenon aptly named [*Simpson's Paradox*](https://en.wikipedia.org/wiki/Simpson%27s_paradox)\index{Simpson's Paradox}. Simpson's Paradox occurs when trends that exist for the data in aggregate either disappear or reverse when the data are broken down into groups. 
+
+Let's show how Simpson's Paradox manifests itself in the `credit_2` data. Let's first visualize the distribution of the numerical explanatory variable `credit_limit` with a histogram in Figure \@ref(fig:credit-limit-quartiles).
+
+```{r credit-limit-quartiles, fig.height=2.5, fig.cap="Histogram of credit limits and brackets.", message=FALSE, echo=FALSE, purl=FALSE}
+ggplot(credit_2, aes(x = credit_limit)) +
+  geom_histogram(color = "white") +
+  geom_vline(xintercept = quantile(credit_2$credit_limit, probs = c(0.25, 0.5, 0.75)), linetype = "dashed", size = 1) +
+  labs(x = "Credit limit", title = "Credit limit and 4 credit limit brackets.")
+```
+
+The vertical dashed lines are the *quartiles* that cut up the variable `credit_limit` into four equally sized groups. Let's think of these quartiles as converting our numerical variable `credit_limit` into a categorical variable "`credit_limit` bracket" with four levels. This means that
+
+1. 25% of credit limits were between \$0 and \$3088. Let's assign these 100 people to the "low" `credit_limit` bracket.
+1. 25% of credit limits were between \$3088 and \$4622. Let's assign these 100 people to the "medium-low" `credit_limit` bracket.
+1. 25% of credit limits were between \$4622 and \$5873. Let's assign these 100 people to the "medium-high" `credit_limit` bracket.
+1. 25% of credit limits were over \$5873. Let's assign these 100 people to the "high" `credit_limit` bracket.
+
+Now in Figure \@ref(fig:2numxplot4) let's re-display two versions of the scatterplot of `debt` and `income` from Figure \@ref(fig:2numxplot1-repeat), but with a slight twist:
+
+1. The left-hand plot shows the regular scatterplot and the single regression line, just as you saw in Figure \@ref(fig:2numxplot1-repeat).
+1. The right-hand plot shows the *colored scatterplot*, where the color aesthetic is mapped to "`credit_limit` bracket." Furthermore, there are now four separate regression lines.
+
+In other words, the location of the `r n_credit_2` points are the same in both scatterplots, but the right-hand plot shows an additional variable of information: `credit_limit` bracket. 
+
+```{r 2numxplot4, echo=FALSE, fig.cap="Relationship between credit card debt and income by credit limit bracket.", fig.height=3, purl=FALSE, message=FALSE}
+credit_2 <- credit_2 %>%
+  mutate(limit_bracket = cut_number(credit_limit, 4)) %>%
+  mutate(limit_bracket = fct_recode(limit_bracket,
+    "low" =  "[855,3.09e+03]",
+    "med-low" = "(3.09e+03,4.62e+03]",
+    "med-high" = "(4.62e+03,5.87e+03]",
+    "high" = "(5.87e+03,1.39e+04]"
+  ))
+
+model3_balance_vs_income_plot <- ggplot(credit_2, aes(x = income, y = debt)) +
+  geom_point() +
+  labs(
+    x = "Income (in $1000)", y = "Credit card debt (in $)",
+    title = "Two scatterplots of credit card debt vs income"
+  ) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_y_continuous(limits = c(0, NA))
+
+model3_balance_vs_income_plot_colored <- ggplot(
+  credit_2,
+  aes(
+    x = income, y = debt,
+    col = limit_bracket
+  )
+) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    x = "Income (in $1000)", y = "Credit card debt (in $)",
+    color = "Credit limit\nbracket"
+  ) +
+  scale_y_continuous(limits = c(0, NA)) +
+  theme(axis.title.y = element_blank())
+
+if (is_html_output()) {
+  model3_balance_vs_income_plot + model3_balance_vs_income_plot_colored
+} else {
+  (model3_balance_vs_income_plot + scale_color_grey()) +
+    (model3_balance_vs_income_plot_colored + scale_color_grey())
+}
+```
+
+The left-hand plot of Figure \@ref(fig:2numxplot4) focuses on the relationship between `debt` and `income` in *aggregate*. It is suggesting that overall there exists a positive relationship between `debt` and `income`. However, the right-hand plot of Figure \@ref(fig:2numxplot4) focuses on the relationship between `debt` and `income` *broken down by `credit_limit` bracket*. In other words, we focus on four *separate* relationships between `debt` and `income`: one for the "low" `credit_limit` bracket, one for the "medium-low" `credit_limit` bracket, and so on. 
+
+Observe in the right-hand plot that the relationship between `debt` and `income` is clearly negative for the "medium-low" and "medium-high" `credit_limit` brackets, while the relationship is somewhat flat for the "low" `credit_limit` bracket. The only `credit_limit` bracket where the relationship remains positive is for the "high" `credit_limit` bracket. However, this relationship is less positive than in the relationship in aggregate, since the slope is shallower than the slope of the regression line in the left-hand plot. 
+
+In this example of Simpson's Paradox, the `credit_limit` is a *confounding variable* of the relationship between credit card `debt` and `income`\index{confounding variable} as we defined in Subsection \@ref(correlation-is-not-causation). Thus, `credit_limit` needs to be accounted for in any appropriate model for the relationship between `debt` and `income`.

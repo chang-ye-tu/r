@@ -168,10 +168,12 @@ is differentiable on $\mathbb{R}$.
 $$
   \frac{\delta^2\beta^{\frac{\gamma}{\delta}}}{\gamma}e^{-\frac{\rho}{\delta}t}u_w^{-\frac{\gamma}{\delta}} + u_{t} +\left(\frac{\delta\nu}{\beta} + rw\right)u_w - \delta(\mu-r)\frac{u_w^2}{u_{w w}} = 0;\quad u(T, w)=0. 
 $$
+
 - The Solution of Merton's Problem
 $$
   u(t, w) = \frac{\delta^{2\delta}\beta^\gamma}{\gamma}e^{-\rho t}\left(\frac{1-e^{\frac{(\rho-\gamma\mu)(t-T)}{\delta}}}{\rho-\gamma\mu}\right)^\delta\left(w+\frac{\delta\nu}{\beta r}\left(1-e^{r(t-T)}\right)\right)^\gamma
 $$
+
 - A Lie Algebra Generator
 $$
 A_1 = \begin{pmatrix} 

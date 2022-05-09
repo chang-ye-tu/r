@@ -28,7 +28,9 @@
 \newcommand{\comm}[1]{\textcolor[rgb]{0.737,0.353,0.396}{{\tt #1}}}%
 
 \begin{document}
+
 \Opensolutionfile{corr}[ans1]
+
 \title{Data Science and R: Exercises and Solutions}
 \author{Chang-Ye Tu}
 

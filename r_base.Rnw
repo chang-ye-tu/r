@@ -4,7 +4,6 @@
 %\usepackage[AutoFakeBold,AutoFakeSlant]{xeCJK}  
 %\setCJKmainfont[AutoFakeSlant=.1,AutoFakeBold=1]{cwTeX Q Kai Medium} 
 %\setCJKfamilyfont{kaiv}[Vertical=RotatedGlyphs]{cwTeX Q Medium}
-%\usepackage[useregional]{datetime2}
 \usepackage{datetime2}
 
 \usetheme{Madrid}

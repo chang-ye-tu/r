@@ -22,7 +22,6 @@ classoptions: hyperref, 12pt, a4paper
 library(tidyverse)
 library(nycflights13)
 library(fivethirtyeight)
-
 # Packages needed internally
 library(kableExtra)
 library(knitr)

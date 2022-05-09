@@ -44,7 +44,6 @@
 \setbeamertemplate{bibliography entry note}{}
 
 \newtheorem*{alg}{Algorithm}
-
 \DeclareMathOperator\prb{{\sf P}}
 \DeclareMathOperator\expc{{\sf E}}
 \DeclareMathOperator\var{var}

@@ -45,7 +45,6 @@ library(knitr)
 - `aes`: Aesthetic attributes of the geometric object: x/y position, color, shape, size 
   - Aesthetic attributes are *mapped* to variables in the dataset
 
-
 ### Other components
 
 - `facet`ing breaks up a plot into several plots split by the values of another variable

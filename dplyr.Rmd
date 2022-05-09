@@ -40,7 +40,7 @@ library(IRdisplay)
   - LaGuardia Airport (LGA)
 - Contains five datasets saved in five data frames
   - `flights`: Information on all 336,776 flights
-  - `airlines`: A table matching airline names and their two-letter International Air Transport Association (IATA) airline codes (also known as carrier codes) for 16 airline companies
+  - `airlines`: A table matching airline names and their two-letter International Air Transport Association (IATA) airline codes (a.k.a. carrier codes) for 16 airline companies
   - `planes`: Information about each of the 3,322 physical aircraft used
   - `weather`: Hourly meteorological data for each of the three NYC airports
     - Has 26,115 rows, roughly corresponding to the 365 $\times$ 24 $\times$ 3 = 26,280 possible hourly measurements one can observe at three locations over the course of a year
