@@ -4,7 +4,7 @@
 
 ## 評分標準
 
-實際資料分析：繳交書面報告（Rmd / Rnw 檔案配合 knitr 生成 html / pdf / ipynb）三至五頁及上台展示（五分鐘）。 
+繳交資料分析或其他研究問題之（可正確編譯的） Rmd 檔案與輔助資料檔，以壓縮檔方式於 6/24 （五）中午十二點前寄至授課老師電子信箱。 
 
 ## 授課內容
 
@@ -22,7 +22,8 @@
 
 * Selected Topics
   - R Markdown, `LaTeX` 
-  - Linear Regression & Inference
+  - Linear Regression 
+  - Sampling & Inference
 
 <!--
   - Linear Regression
@@ -48,28 +49,6 @@
   - Web Applications
   - Web Crawler in Action
 -->
-
-## 授課時程
-
-| 上課時間           | 課程進度                                       | 
-|--------------------|------------------------------------------------|
-| 	2/25         | Preliminaries                                  | 
-|       3/04         | Base-R: First Encounter                        |
-|       3/11         | Base-R: Operators, Functions, Vectors          |
-| 3/14, 3/18         | Base-R: Vectors, Common Operations             | 
-|       3/25         | Base-R: Programming                            |
-| 3/28               | Base-R: Programming                            |
-|       4/08         | `tidyverse`: Data Wrangling: `dplyr`           |
-| 4/11, 4/15         | `tidyverse`: Data Wrangling: `dplyr`           |
-|       4/22         | `tidyverse`: Data Importing and Tidying: `readr`, `stringr`, `lubridate`|
-| 4/25, 4/29         | `tidyverse`: Data Visualization: `ggplot2`     |
-|       5/06         | Selected Topics: R Markdown, `LaTeX`           |
-| 5/09, 5/13         | Selected Topics: Linear Regression & Inference |
-|       5/20         | Selected Topics: Linear Regression & Inference |
-| 5/23, 5/27         | Selected Topics: Linear Regression & Inference |
-| 6/06, 6/10         | Selected Topics: Linear Regression & Inference | 
-
-原則上 5/20 該週確定題目與使用資料集，6/06 該週報告。
 
 ## 授課教師
 
