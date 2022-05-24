@@ -259,7 +259,7 @@ interaction_plot + parallel_slopes_plot
   - the cardholder's credit card debt
 - Two explanatory variables:
   - One numerical explanatory variable $x_1$, the cardholder's credit limit
-  - Another numerical explanatory variable $x_2$, the cardholder's income (in thousands of dollars)
+  - Another numerical explanatory variable $x_2$, the cardholder's income (in K usd)
 
 ### Exploratory data analysis
 
@@ -434,9 +434,9 @@ get_regression_points(model_2_interaction) %>%
 ```
 
 - The variance of $y$ is equal to the variance of $\widehat{y}$ plus the variance of the residuals
-- The variance of $y$ (denoted as $\text{var}(y)$) tells us how much do Massachusetts high schools differ in average math SAT scores
-- The variance of $\widehat{y}$ (denoted as $\text{var}(\widehat{y})$) tells us how much the fitted values from the interaction model vary
-- The variance of the residuals tells us how much do "the left-overs" from the model vary
+- The variance of $y$ ($\text{var}(y)$) tells us how much the original data vary 
+- The variance of $\widehat{y}$ ($\text{var}(\widehat{y})$) tells us how much the fitted values from the assumed model vary
+- The variance of the residuals tells us how much do "the left-overs" from the assumed model vary
 - Define $R^2$:
 $$
 R^2 = \frac{\text{var}(\widehat{y})}{\text{var}(y)}
@@ -492,8 +492,8 @@ bind_rows(variances_interaction, variances_parallel_slopes) %>%
     kable_styling(font_size = 16) %>% as.character %>% display_html
 ```
 
-- Since the additional complexity of the interaction model over the parallel slopes model improves our $R^2$ value by a relatively large amount, it could be argued that the additional complexity is warranted 
-- We can also use `get_regression_summaries()` to quickly automate calculating $R^2$ for both the interaction and parallels slopes models for $y$ = average math SAT score for Massachusetts high schools
+- Since the interaction model over the parallel slopes model improves our $R^2$ value by a relatively large amount, it could be argued that the additional complexity is warranted 
+- We can also use `get_regression_summaries()` to quickly automate calculating $R^2$ for both the interaction and parallels slopes models
 
 ```{r}
 # R-squared for interaction model:
@@ -601,9 +601,8 @@ model3_balance_vs_income_plot + model3_balance_vs_income_plot_colored
 ```
 
 - The left-hand plot shows the regular scatterplot and the single regression line
+  - Focus on the relationship between `debt` and `income` in *aggregate*
 - The right-hand plot shows the *colored scatterplot*, where the color aesthetic is mapped to "`credit_limit` bracket" 
-  - There are now four separate regression lines
-- The left-hand plot focuses on the relationship between `debt` and `income` in *aggregate*
-- The right-hand plot focuses on the relationship between `debt` and `income` *broken down by `credit_limit` bracket*
+  - Focus on the relationship between `debt` and `income` *broken down by `credit_limit` bracket*
   - Four *separate* relationships between `debt` and `income`: one for the "low" `credit_limit` bracket, one for the "medium-low" `credit_limit` bracket, and so on 
 - The `credit_limit` is a *confounding variable* of the relationship between credit card `debt` and `income`
