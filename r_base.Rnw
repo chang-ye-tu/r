@@ -1,0 +1,1233 @@
+\documentclass[8pt,usenames,dvipsnames]{beamer}
+\usepackage{booktabs}
+
+%\usepackage[AutoFakeBold,AutoFakeSlant]{xeCJK}  
+%\setCJKmainfont[AutoFakeSlant=.1,AutoFakeBold=1]{cwTeX Q Kai Medium} 
+%\setCJKfamilyfont{kaiv}[Vertical=RotatedGlyphs]{cwTeX Q Medium}
+\usepackage{datetime2}
+
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+% XXX https://tex.stackexchange.com/questions/216435/how-do-i-properly-label-the-figures-and-tables-in-beamer-in-share-latex
+\setbeamertemplate{caption}[numbered]{} % Number float-like environments
+
+\setbeamertemplate{footline}[text line]{%
+  \parbox{\linewidth}{\vspace*{-8pt}
+  %\DTMnow\hfill\href{https://github.com/chang-ye-tu/r}{https://github.com/chang-ye-tu/r}\hfill
+  %\hyperlink{toc}{TOC} ~~ 
+  \hfill\insertframenumber / \inserttotalframenumber~~~~~~~~~}}
+  \setbeamertemplate{navigation symbols}{}%[only frame symbol]
+
+% white letters in enumerate bullet points
+%\definecolor{stupidblue}{RGB}{51,51,178}
+\setbeamercolor{item projected}{fg=white}%fg=blue,bg=red!75!black} % fg=white , bg=stupidblue
+\setbeamercolor{frametitle}{fg=black}
+% Block title color
+\setbeamercolor{block title}{fg=white}%fg=blue,bg=red!75!black} % white
+%\setbeamertemplate{item projected}[square]
+
+\definecolor{foo}{rgb}{.2,.2,.7}
+\AtBeginSection[]{
+    \begin{frame}
+    \vfill
+    \centering
+    \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{section page}
+        \usebeamerfont{title}%
+        {\color{foo} \insertsectionhead}\par%
+    \end{beamercolorbox}
+    \vfill
+    \end{frame}
+}
+
+% https://tex.stackexchange.com/questions/30423/bibliography-in-beamer
+\setbeamertemplate{bibliography entry title}{}
+\setbeamertemplate{bibliography entry location}{}
+\setbeamertemplate{bibliography entry note}{}
+
+\newtheorem*{alg}{Algorithm}
+
+\DeclareMathOperator\prb{{\sf P}}
+\DeclareMathOperator\expc{{\sf E}}
+\DeclareMathOperator\var{var}
+\DeclareMathOperator\cov{cov}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+\DeclareMathOperator*{\argmin}{\arg\!\min}
+
+\usepackage{dsfont} % indicator function \mathds{1}
+\DeclareMathOperator\indc{\mathds{1}}
+\DeclareMathOperator\corr{corr}
+\DeclareMathOperator\rk{rank}
+
+\newcommand{\comm}[1]{\textcolor[rgb]{0.737,0.353,0.396}{{\tt #1}}}%
+
+\setbeamertemplate{headline}{}
+\title{R Fundamentals}
+\author{}
+\date{}%\today}
+
+\begin{document}
+<<include = FALSE>>=
+knitr::opts_chunk$set(comment = '#', fig.align = 'center')
+@
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\subsection*{Outline}
+\begin{frame}
+  \tableofcontents
+\end{frame}
+
+\section{First Encounter}
+
+\subsection{First Steps}
+\begin{frame}[fragile]
+  \frametitle{First Steps}
+  \begin{itemize}
+    \item R as a calculator --- show the numerical result of \comm{$1 + 2\times\frac{3}{4} - 5 + 6 \sin\frac{\pi}{2} - \sqrt[8]{7}$}
+<<>>=
+1 + 2 * (3 / 4) - 5 + 6 * sin(pi / 2) - 7^(1/8)
+@
+    \vfill\item Print the content of the built-in dataset \comm{Nile}
+<<size='small'>>=
+Nile
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+        \item Show the histogram of \comm{Nile}
+<<out.width = "90%">>=
+hist(Nile)
+@
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+        \item Show the plot of \comm{Nile}
+<<out.width = "90%">>=
+plot(Nile)
+@
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\subsection{Vectors and Indices}
+
+\begin{frame}[fragile]
+  \frametitle{Vectors and Indices}
+  \begin{itemize}
+    \item The 2nd item of the \comm{Nile} dataset
+<<>>=
+Nile[2]
+@
+    \vfill\item Subsequence taken from 2nd to 5th item of \comm{Nile}
+<<>>=
+Nile[2:5]
+@
+    \vfill\item Subsequence taken from 2nd to 5th item of \comm{Nile}: using the concatenate function \comm{c}
+<<>>=
+Nile[c(2, 3, 4, 5)]
+@
+    \vfill\item Subsequence taken from 10th, 3rd, 15th item of \comm{Nile}
+<<>>=
+Nile[c(10, 3, 15)]
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item Let \comm{x} be a vector \comm{(10, 20, -1, 3, 5, 6, 30, 9)} 
+<<>>=
+(x <- c(10, 20, -1, 3, 5, 6, 30, 9))
+@
+    \vfill\item Let \comm{y} be a vector formed by taking the 2nd element out of \comm{x} 
+<<>>=
+(y <- x[-2])
+@
+    \vfill\item Let \comm{z} be a vector formed by taking the 2nd, 3rd, 6th element out of \comm{x} 
+<<>>=
+(z <- x[c(-2, -3, -6)])
+@
+    \vfill\item Let \comm{w} be the vector formed by combining \comm{x, y, z} 
+<<>>=
+(w <- c(x, y, z))
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item Subsequence taken from 81th to 95th item of \comm{Nile}:
+<<size='small'>>=
+Nile[81:95]
+@
+    \vfill\item Lengths of the subsequence \comm{Nile[81:95]}
+<<>>=
+length(Nile[81:95])
+@
+    \vfill\item Let the subsequence \comm{Nile[81:95]} be \comm{v8195}; Compute its mean and standard deviation 
+<<>>=
+v8195 <- Nile[81:95]; mean(v8195); sd(v8195)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item Let the vector \comm{x <- c(20, 1, 15, 13, 12)}. Print \comm{x > 14}:
+<<>>=
+x <- c(20, 1, 15, 13, 12); x > 14
+@
+    \vfill\item How many items in \comm{x} that $ > 14$ ? 
+<<>>=
+sum(x > 14)
+@
+    \vfill\item Which of the items in \comm{Nile} are $> 1200$ ? 
+<<>>=
+which(Nile > 1200)
+@
+    \vfill\item Print out the items in \comm{Nile} that $> 1200$.
+<<>>=
+Nile[Nile > 1200]
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Data Frame}
+
+\begin{frame}[fragile]
+  \frametitle{Data Frame}
+  \begin{itemize}
+    \item data frame: a rectangular table consisting of one row for each data point. Built-in data frame \comm{ToothGrowth}, assigned \comm{tg}.
+    \vfill\item len: tooth length; supp: supplement VC (vitamin c) or OJ (orange juice); dose
+<<>>=
+head(ToothGrowth)
+@
+      \vfill\item Each column is a vector; use \comm{\$} to extract 
+<<size='small'>>=
+tg <- ToothGrowth; tg$len
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item To get the item of \comm{tg} in row 3, column 1  
+<<>>=
+tg[3, 1]
+@
+    \vfill\item To get the item of \comm{tg} in row 3, column 1: using that \comm{tg\$len} is a vector
+<<>>=
+tg$len[3]
+@
+    \vfill\item Extract rows 2 through 5, and columns 1 and 3, assigning the result to \comm{z}
+<<>>=
+(z <- tg[2:5, c(1, 3)])
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{columns}
+    \begin{column}{0.46\textwidth}
+      \begin{itemize}
+        \item To get the items of \comm{tg} in columns 1, 3
+<<>>=
+head(tg[, c(1, 3)])
+@
+        \vfill\item To get the items of \comm{tg} in columns 1, 3: remove column 2
+<<>>=
+head(tg[, -2])
+@
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+        \item Create your own data frame from vectors of same lengths
+<<>>=
+age <- c(55, 58, 45)
+name <- c('Alice', 'Bill', 'Cathy')
+(d <- data.frame(age, name))
+@
+        \vfill\item Note that vector of different lengths are not allowed ! 
+<<>>=
+blood <- c('O', 'B', 'A', 'AB')
+data.frame(age, name, blood)
+@
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\subsection{Extracting Rows / Columns from Data Frames}
+
+\begin{frame}[fragile]
+  \frametitle{Extracting Rows / Columns from Data Frames}
+  \begin{columns}
+    \begin{column}{0.47\textwidth}
+      \begin{itemize}
+        \item In \comm{tg}, compute mean tooth length for supplement VC and OJ
+<<>>=
+tg_vc <- tg[tg$supp == 'VC',]
+tg_oj <- tg[tg$supp == 'OJ',]
+mean(tg_vc$len)
+mean(tg_oj$len)
+@
+        \vfill\item Extract the sub data frame from \comm{tg} with supplement OJ and length $< 8.8$
+<<>>=
+tg[tg$supp == 'OJ' & tg$len < 8.8,]
+@
+        \vfill\item Note the existence and the postion of the comma ({\tt,}) and the use of {\tt==} ! 
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \begin{itemize}
+        \vfill\item Extract the sub data frame from \comm{tg} with length $> 28$ or dose $=1.0$ 
+<<>>=
+w <- tg[tg$len == 28 | tg$dose == 1.0,]
+head(w, 13)
+@
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\subsection{List}
+
+\begin{frame}[fragile]
+  \frametitle{List}
+    \begin{itemize}
+      \item In \comm{mtcars}, split the miles-per-gallon (mpg) data according to the number of cylinders (cyl):
+<<>>=
+(mtl <- split(mtcars$mpg, mtcars$cyl))
+class(mtl)
+@
+      \vfill\item Now vectors in \comm{mtl}, a list, can be accessed individually with \comm{\$` `} and \comm{[[ ]]}:
+<<>>=
+mtl$`6`; mtl[[2]]
+@
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item In R, data frames can't hold vectors of different lengths, but lists can.
+<<>>=
+vn <- c(1, 1.2, 2.3, 3.4, 4.5)
+vb <- c(TRUE, TRUE, FALSE)
+vc <- c('limestone', 'marl', 'oolite', 'CaCO3')
+@
+<<>>=
+data.frame(vn, vb, vc)
+@
+<<>>=
+list(vn, vb, vc)
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Graphics}
+\begin{frame}[fragile]
+  \frametitle{Graphics}
+<<out.width = "50%">>=
+pe <- read.table(
+    'https://raw.githubusercontent.com/matloff/fasteR/master/data/prgeng.txt', 
+    header=TRUE)
+plot(pe$age, pe$wageinc)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<out.width = "50%">>=
+pe2500 <- pe[sample(1:nrow(pe), 2500),]
+plot(pe2500$age, pe2500$wageinc)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<out.width = "50%">>=
+plot(pe2500$age, pe2500$wageinc, 
+     col=as.factor(pe2500$sex), xlab='age', ylab='wage', cex=0.6)
+@
+\end{frame}
+
+\subsection{Programming}
+
+\begin{frame}[fragile]
+  \frametitle{Programming}
+    \begin{itemize}
+      \item We have been using built-in functions such as \comm{mean}, \comm{var}.
+<<>>=
+v <- c(1, 1.2, 2.3, 3.4, 4.5, 5.6, 6.7, 7.8)
+cat('mean: ', mean(v), 'var: ', var(v))
+@
+      \vfill\item Now write our own:
+<<>>=
+my_mean <- function(x) {
+    return(sum(x) / length(x))
+}
+my_mean(v)
+@
+<<>>=
+my_var <- function(x) {
+    m <- my_mean(x)
+    return(sum((x - m)^2 / (length(x) - 1)))
+}
+my_var(v)
+@
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item How to sum 1 to 10000 if we don't use built-in functions?
+<<>>=
+ans <- 0
+for (i in 1:10000) {
+    ans <- ans + i
+}
+ans
+@
+      \vfill\item How to sum $\sum_{k=1}^{100}\min\{2^k, k^4\}$ ?
+<<>>=
+ans <- 0
+for (k in 1:100) {
+    ans <- ans + min(2^k, k^4)
+}
+ans
+@
+     \vfill\item Bonus: Do you know how to do $\sum_{k=1}^{100}\min\{2^k, k^4\}$ quickly without loops?
+<<eval=FALSE>>=
+v = 100; sum(pmin(2^v, v^4))
+@
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{itemize}
+      \item How to sum a vector \comm{x} if we don't use built-in functions?
+<<>>=
+my_sum <- function(x) {
+    ans <- 0
+    for (i in 1:length(x)) {
+        ans <- ans + x[i]
+    }
+    ans
+}
+my_sum(1:100)
+@
+      \vfill\item But it's SOOOO inefficient comparing to built-in functions \ldots
+<<>>=
+v <- 1:1000000; system.time(my_sum(v)); system.time(sum(v))
+@
+      \vfill\item Your Turn: Write a function \comm{myprod} to replicate the built-in function \comm{prod}.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item conditional: \comm{if}, \comm{else}
+<<>>=
+v <- c(20, 18, 45, 33, 25, 9, 17, 55, 69, 81, 44, 32); nv <- length(v)
+w <- vector(length = nv)
+for (i in 1:nv) {
+    if (v[i] >= 20 & v[i] < 40) {
+        w[i] <- 0
+    } else if (v[i] >= 40 & v[i] < 60) {
+        w[i] <- -1
+    } else {
+        w[i] <- v[i]
+    }
+}
+v; w
+@
+   \vfill\item vector version: \comm{ifelse} 
+<<>>=
+ww <- ifelse(v >= 20 & v < 40, 0, v)
+ww <- ifelse(ww >= 40 & ww < 60, -1, ww); ww
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Misc: Linear Regression, Help Functions}
+
+\begin{frame}[fragile]
+  \frametitle{Misc: Linear Regression, Help Functions}
+  \begin{itemize}
+    \item Linear regression model
+<<eval=FALSE>>=
+head(cars)
+model <- lm(dist ~ speed, data = cars)  
+print(model)
+summary(model)
+plot(model)
+abline(model)
+@
+    \vfill\item built-in help mechanisms; functions source lookup
+<<eval=FALSE>>=
+?prod
+example(cumsum)
+example(persp)
+help.search('multivariate normal')
+help(mgcv::rmvn)
+help(rmvn)
+rmvn
+mgcv::rmvn
+prod
+var
+sd
+@
+    \end{itemize}
+\end{frame}
+
+\section{Operators}
+
+\begin{frame}[fragile]
+  \begin{table}[!htbp]
+    \centering
+    \begin{tabular}{ll}
+      \toprule
+      Operators &  Definition \\
+      \midrule
+      \comm{+ - * / } & plus, minus, times, divide\\
+      \comm{\%/\% \%\% \textasciicircum} & integer quotient, modulo, power \\
+      \comm{> >= < <=} & greater than, greater than or equals, less than, less than or equals\\
+      \comm{== !=} & equals, not equals\\
+      \comm{! \& |} & not, and, or\\
+      \comm{<- ->} & assignment (gets)\\
+      \comm{\$} & list indexing ('the element name' operator)\\
+      \comm{:} & sequence creation\\
+      \comm{\textasciitilde} & model formulae ('is modelled as a function of') \\
+      \midrule
+      \comm{\%x\%} & special binary operators: \comm{x} can be set by any valid name \\
+      \comm{\%*\%} & special binary operator:  matrix product \\
+      \comm{\%in\%} & special binary operator:  test matching \\
+      \comm{\&\& ||} & vector and, or\\
+      \comm{::} & namespace assignment \\
+      \comm{xor(a, b)} & elementwise exclusive OR \\
+      \comm{<<-} & global assignment \\
+      \bottomrule
+    \end{tabular}
+    \label{tbl:op}
+  \end{table}
+\end{frame}
+
+\section{Functions}
+
+\begin{frame}[fragile]
+  \begin{table}[!htbp]
+    \centering
+    \begin{tabular}{ll}
+    \toprule
+    Function &  Definition \\
+    \midrule
+    \comm{abs(x)} & absolute value of \comm{x} \\
+    \comm{floor(x)} & greatest integer less than \comm{x} \\
+    \comm{ceiling(x)} & smallest integer greater than \comm{x}\\
+    \comm{trunc(x)} & closest integer to \comm{x} between \comm{x} and \comm{0}\\
+    \comm{round(x, digits = 0)} & round the value of \comm{x} into integer \\
+    \comm{signif(x, digits = 6)} & give \comm{x} to 6 significant digits in scientific notation \\
+    \comm{runif(n)} & generate \comm{n} random numbers from $\text{uniform}(0, 1)$\\
+    \comm{choose(n, m)} & binomial coefficient $\binom{n}{m}$ \\
+    \comm{log(x)} & log to base $e$ of \comm{x}\\
+    \comm{log(x, n)} & log to base \comm{n} of \comm{x} \\
+    \comm{log10(x)} & log to base 10 of \comm{x} \\
+    \comm{exp(x)} & $\exp(x)$ \\
+    \comm{sqrt(x)} & $\sqrt{x}$ \\
+    \comm{factorial(x)} & $x! = x\times(x-1)\times(x-2)\times\cdots\times 2\times 1$ \\
+    \comm{sin(x), cos(x), tan(x)} & $\sin x$, $\cos x$, $\tan x$\\
+    \bottomrule
+    \end{tabular}
+    \label{tbl:math}
+  \end{table}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{table}[!htbp]
+    \centering
+    \begin{tabular}{ll}
+    \toprule
+    Function &  Definition \\
+    \midrule
+    \comm{max(x)} & maximum value in \comm{x} \\
+    \comm{min(x)} & mininum value in \comm{x} \\
+    \comm{sum(x)} & sum of all the values in \comm{x}\\
+    \comm{mean(x)} & arithmetic average of the values in \comm{x}\\
+    \comm{median(x)} & median value in \comm{x}\\
+    \comm{quantile(x, p)} & vector corresponding to the given probability \comm{p} of \comm{x}\\
+    \comm{range(x)} & vector of \comm{min(x)} and \comm{max(x)}\\
+    \comm{rank(x)} & vector of the ranks of the values in \comm{x}\\
+    \comm{order(x)} & an integer vector containing the permutation to sort \comm{x} into asc order\\
+    \comm{var(x)} & sample variance of \comm{x}\\
+    \comm{cor(x, y)} & correlation between vectors \comm{x} and \comm{y}.\\
+    \comm{sort(x)} & a sorted copy of \comm{x}\\
+    \comm{cumsum(x)} & vector containing the sum of all the elements up to that point\\
+    \comm{cumprod(x)} & vector containing the product of all the elements up to that point\\
+    \comm{pmax(x, y, z)} & vector containing the maximum of \comm{x, y, z} at each position\\
+    \comm{pmin(x, y, z)} & vector containing the minimum of \comm{x, y, z} at each position\\
+    \comm{colMeans(x)} & column means of dataframe or matrix \comm{x}\\
+    \comm{colSums(x)} & column totals of dataframe or matrix \comm{x}\\
+    \comm{rowMeans(x)} & row means of dataframe or matrix \comm{x}\\
+    \comm{rowSums(x)} & row totals of dataframe or matrix \comm{x}\\
+    \bottomrule
+    \end{tabular}
+    \label{tbl:vec}
+  \end{table}
+\end{frame}
+
+\section{Vectors}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item flavors: atomic, generic (lists) 
+    \vfill\item primary types of atomic vector: logical, integer, double, character; integer + double = numeric
+    \vfill\item esoteric types of atomic vector: complex, raw
+    \vfill\item scalars: vectors of length 1
+      \begin{itemize}
+        \vfill\item logical: \comm{TRUE}, \comm{FALSE}, \comm{T}, \comm{F}
+        \vfill\item double: \comm{0.1234}, \comm{1.23e4}, \comm{0xcafe}, \comm{NaN}, \comm{-Inf}, \comm{Inf}
+        \vfill\item integer: \comm{1234L}, \comm{1e4L}, \comm{0xcafeL}
+        \vfill\item character: \comm{"hi"}, \comm{'bye'}, special characters escaped with \comm{\textbackslash}; see \comm{?Quotes} for details.
+      \end{itemize}
+    \vfill\item demonstrations
+<<>>=
+v_logical <- c(TRUE, FALSE) # atomic vector: logical
+v_integer <- c(1L, 6L, 10L) # atomic vector: integer
+v_double <- c(1, 2.5, 4.5)  # atomic vector: double
+v_character <- c('these', 'are', 'characters') # atomic vector: character
+# concatenation of atomic vectors yield atomic vectors
+(v <- c(c(1, 2), c(3, 4)))
+typeof(v_logical); typeof(v_integer); typeof(v_double); typeof(v_character)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item missing values: \comm{NA} (Not Applicable); be existent but unknown. 
+<<>>=
+NA > 5; 20 * NA; !NA  # NA tend to be infectious!
+NA ^ 0; NA | TRUE; NA & FALSE  # some exceptions   
+x <- c(NA, 5, NA, 10); x == NA; is.na(x) # using is.na() to test
+@
+    \item \comm{NULL}: nonexistent value
+<<>>=
+u <- NULL; length(u)
+v <- NA; length(v)
+@
+    \item useful tests: \comm{is.null()}, \comm{is.na()}
+    \item testing vector type: use \comm{is.logical()}, \comm{is.integer()}, \comm{is.double()}, \comm{is.character()}
+    \item testing vector type: avoid \comm{is.vector()}, \comm{is.atomic()}, \comm{is.numeric()}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item R feature: automatic coercion of vector elements; \comm{as.*()} to coerce
+<<>>=
+typeof(c('a', 1))
+x <- c(TRUE, FALSE, TRUE, TRUE); as.numeric(x)
+as.integer(c('1', '1.5', 'a'))
+@
+    \item type coercion hierarchy: character > double > integer > logical
+<<>>=
+c(1, FALSE); c(TRUE, 1L); 1 == '1'; -1 < FALSE; 'one' < 2
+@
+    \item \comm{:} generating consecutive sequence
+<<>>=
+5:10; 5:1; i <- 5; 1:i-1; 1:(i-1)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item \comm{seq} --- generalized \comm{:} 
+<<>>=
+seq(from = 11, to = 30, by = 3); seq(from = 1.1, to = 2, length = 10)
+@
+    \item using \comm{seq} in for-loops 
+<<eval=FALSE>>=
+for (i in 1:length(x)) {}  # What if length(x) == 0 ?
+for (i in seq(x)) {}       # Use this instead !   
+(x <- c(9, 5, 17)); seq(x); (x <- NULL); seq(x)
+@
+    \item The recycling rule: in operations involving two vectors, R repeats the shorter one
+<<>>=
+c(2, 4, 3) + c(6, 10, -1, 3, 5)
+c(2, 4, 3, 2, 4) + c(6, 10, -1, 3, 5)
+c(2, 4, 3) * c(6, 10, -1, 3, 5)
+c(2, 4, 3, 2, 4) * c(6, 10, -1, 3, 5)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item example: how to select even terms in a vector? 
+<<>>=
+x <- 1:10; x[x %% 2 == 0]
+x <- sin(1:10); x[seq(x) %% 2 == 0]; x[c(F, T)]
+@
+    \item \comm{rep}: repeating vector constants
+<<>>=
+(x <- rep(3, 5)); rep(c(10, 15, 3), 4); rep(5:1, 3)
+@
+    \item some other examples
+<<>>=
+rep(c(10, 15, 3), each = 4) # interleave the copies with `each`
+rep(1:4, each = 2, times = 3); rep(1:4, 1:4); rep(1:4, c(4, 1, 4, 2))
+rep(c('C', 'G', 'H'), c(4, 5, 2))
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item 
+<<>>=
+rep(1:4, each = c(4, 3, 2))
+@
+    \item \comm{all} and \comm{any} 
+<<>>=
+x <- 1:100; any(x > 200); all(x > 0)
+@
+    \item testing vector equality: not \comm{==}
+<<>>=
+x <- 1:3; y0 <- c(1, 2, 3); y1 <- c(1, 3, 4); x == y0; x == y1
+@
+    \item consider \comm{identical} and \comm{all.equal} --- use \comm{isTRUE(all.equal(\ldots))} in \comm{if} expr !
+<<>>=
+identical(x, y0); typeof(x); typeof(y0)
+all.equal(x, y0); all.equal(x, y1)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item \comm{attr(), attributes(), structure()}: make other data structures from atomic vectors by adding attributes
+<<>>=
+a <- 1:3; attr(a, 'x') <- 'ab'; attr(a, 'x')
+attr(a, 'y') <- 4:6; str(attributes(a))
+a <- structure(1:3, x = 'ab', y = 4:6); str(attributes(a))
+@
+    \item 3 ways to name a vector \comm{x} 
+<<eval=FALSE>>=
+x <- c(a = 1, b = 2, c = 3)
+x <- 1:3; names(x) <- c('a', 'b', 'c')
+x <- setNames(1:3, c('a', 'b', 'c'))
+@
+    \item adding a \comm{dim} attribute to vectors make 2d matrices and nd arrays  
+<<eval=FALSE>>=
+x <- matrix(1:6, nrow = 2, ncol = 3)  # 2d matrix
+x1 <- 1:6; dim(x1) <- c(2, 3); x1
+y <- array(1:12, c(2, 3, 2))  # 3d array
+y1 <- 1:12; dim(y1) <- c(2, 3, 2); y1
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item S3 atomic vectors in Base-R
+      \begin{itemize}
+        \vfill\item categorical data: fixed set of levels in \comm{factor} vectors
+        \vfill\item date (with day resolution): recorded in \comm{Date} vectors
+        \vfill\item date-time (with second / subsecond resolution): recorded in \comm{POSIXct} vectors
+        \vfill\item durations: stored in \comm{difftime} vectors
+      \end{itemize}
+    \vfill\item factors are used when we have categorical variables.
+<<eval=FALSE>>=
+(x <- factor(c('a', 'b', 'b', 'a'))); str(x); typeof(x); attributes(x);
+@
+    \vfill\item \comm{tapply}: simple example
+<<eval=FALSE>>=
+ages <- c(25, 26, 55, 37, 21, 42); affils <- c('R', 'D', 'D', 'R', 'U', 'D')
+tapply(ages, affils, mean)
+@
+    \vfill\item \comm{tapply}: further example
+<<eval=FALSE>>=
+d <- data.frame(list(gender = c('M', 'M', 'F', 'M', 'F', 'F'),
+                     age = c(47, 59, 21, 32, 33, 24),
+                     income = c(55000, 88000, 32450, 76500, 123000, 45650)))
+d$over25 <- ifelse(d$age > 25, 1, 0)
+tapply(d$income, list(d$gender, d$over25), mean)
+@
+  \end{itemize}
+\end{frame}
+
+\section{Common Tasks}
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item create a vector from given values: \comm{c}
+<<eval=TRUE, comment=''>>=
+# Note the coercion hierarchy: character, double, integer, logical
+v1 <- c(1, 2, 3); v2 <- c('a', 'b', 'c'); (v3 <- c(v1, v2))
+@
+    \vfill\item comparison of two vectors: element-by-element
+<<eval=TRUE, comment=''>>=
+# Note the vector recycling (and scalars are vectors of length 1)!  
+v <- c(4, pi); w <- c(pi, pi, pi, 3);
+v == w; v != w; v < w; v <= w; v > w; v >= w; w != pi
+@
+    \vfill\item comparison of two vectors: all at once 
+<<eval=TRUE, comment=''>>=
+v <- c(3, pi, 4); any(v == pi); all(v == pi)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item selecting vector elements by numerical vectors (including scalars) 
+<<eval=TRUE, comment=''>>=
+fib <- c(0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144);
+fib[1]; fib[5]; fib[2:5]; fib[8:4]; fib[c(2, 4, 8, 1)]
+# Note that 'minus' means 'exclude'; no mixing of positive/negative integers!
+fib[-3]; fib[-(5:9)]
+@
+    \item selecting vector elements by logical vectors: the recycling rule is in effect 
+<<eval=TRUE, comment=''>>=
+# selecting elements that < 10
+fib[fib < 10] 
+# selecting elements that are multiples of 2 and 3 
+fib[fib %% 2 == 0 | fib %% 3 == 0]
+# selecting the odd terms: 1st, 3rd, 5th, etc.
+fib[c(T, F)]
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item selecting vector elements by combinations of functions of logical vectors 
+<<eval=TRUE, comment=''>>=
+v <- c(2, 8, 1, 7, -11, 6, 20, 3, 12, 35, 21, 3, 5, 7, -2);
+# select all elements greater than the median
+v[v > median(v)]
+# select all elements in the lower and upper 5%
+v[v < quantile(v, 0.05) | v > quantile(v, 0.95)]
+# select all elements that exceed ±1 standard deviations from the mean
+v[abs(v - mean(v)) > sd(v)]
+# select all elements that are neither NA nor NULL
+v <- c(21, 2, 3, NA, 5, NULL, NA, 32, 55)
+v[!is.na(v) & !is.null(v)]
+@
+    \vfill\item generate 1-spaced number sequences --- operator \comm{:} 
+<<eval=TRUE, comment=''>>=
+1:5; 0.5:4.5; 4.5:0.5
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item generate evenly-spaced sequences: \comm{seq} 
+<<comment=''>>=
+seq(10, 20)
+seq(from = 10, to = 20, by = 1.5)
+seq(from = 10, to = 20, length.out = 6)
+@
+    \vfill\item generate repetitive sequences: \comm{rep} 
+<<comment=''>>=
+rep('A', 5); rep(1:5, c(2, 3, 2, 1, 5))
+@
+    \vfill\item generate random sequences (sampling): \comm{sample} 
+<<comment=''>>=
+sample(LETTERS[1:5], 15, replace = T); sample(letters[1:20], 15)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item primitive sequences generator: \comm{sequence} 
+<<comment=''>>=
+cat(sequence(8:5, from = c(1, 2, 1, 3)))
+cat(sequence(8:5, from = c(1, 2, 1)))
+sequence(c(6, 7, 4), from = c(8, 1, 9), by = c(-1, 1, -2))
+@
+    \item print concatenated results on screen: \comm{cat} 
+<<comment=''>>=
+# `cat` puts a space between each item: using '\n' to terminate the line
+v <- c(20, 30, 3 * pi); cat("The content of v is:", v, "...\n")
+@
+    \item (old school) string formatting: \comm{sprintf} 
+<<comment=''>>=
+# %3d: 3 digits; %.6f: floats with 6 decimal places; %s: string
+for (i in 50 * (0:2)) {
+  cat(sprintf('The %3d-th term of sequence %s(%s(%3d)) is %.6f', 
+              i, 'exp', 'sin', i, exp(sin(i))), '\n')
+}
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item generate concatenate string vectors: \comm{paste}, \comm{paste0} 
+<<comment=''>>=
+(labels <- paste(c('a', 'b'), 1:20, sep = '-'))
+(nth <- paste0(1:12, c("st", "nd", "rd", rep("th", 9))))
+@
+    \vfill\item appending data to a vector 
+<<eval=FALSE>>=
+# use c() to concatenate vector
+v <- c(1, 2, 3); it <- c(6, 7, 8); c(v, it)
+# R will automatically extend the vector
+v <- c(1, 2, 3); v[length(v) + 1] <- 42; v
+# append an entire vector
+w <- c(5, 6, 7, 8); v <- c(v, w); v
+v[15] <- 0; v
+@
+    \vfill\item inserting data to a vector
+<<eval=FALSE>>=
+append(1:10, 99, after = 5)
+append(1:10, 99, after = 0)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item creating a list
+<<eval=FALSE>>=
+(l <- list(3.14, 'Moe', c(1, 3, 5, 2), mean))
+l <- list(); l[[1]] <- 3.14; l[[2]] <- 'Moe'; 
+l[[3]] <- c(1, 3, 5, 2); l[[4]] <- mean; l
+(l <- list(max = 5, right = 0.6, mean = 20))
+@
+    \vfill\item selecting list elements
+<<eval=FALSE>>=
+l[[1]]  # by position
+l[['max']]; l$mean; l['max'] # by name; different outcomes 
+@
+    \vfill\item building a name / value association list 
+<<eval=FALSE>>=
+values <- c(0.1, 0.52, 0.33); names <- c("left", "right", "mid")
+l <- list(); l[names] <- values; l
+# Note two conventional ways
+l <- list(); l$left <- 0.1; l$right <- 0.52; l$mid <- 0.33; l
+l <- list(); l[['left']] <- 0.1; l[['right']] <- 0.52; l[['mid']] <- 0.33; l
+@
+    \vfill\item removing an element from a list 
+<<eval=FALSE>>=
+(l <- list(date = '2020-01-05', time = '12:50:11', number = 20))
+l[c('date', 'time')] <- NULL; l  # remove two elements
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item flatten a list into a vector 
+<<eval=FALSE>>=
+iq.scores <- list(100, 120, 140, 112, 105); 
+mean(iq.scores); mean(unlist(iq.scores))
+cat(iq.scores, '\n'); cat('IQ scores:', unlist(iq.scores), '\n')
+@
+    \item initializing a matrix 
+<<eval=FALSE>>=
+v <- 1:6; matrix(v, 2, 3)
+@
+    \item giving descriptive names to the rows and columns of a matrix 
+<<eval=FALSE>>=
+m <- matrix(c(1, 0.556, 0.380, 0.556, 1, 0.444, 0.380, 0.444, 1), 3, 3)
+colnames(m) <- c('AAPL', 'MSFT', 'GOOG'); 
+rownames(m) <- c('AAPL', 'MSFT', 'GOOG'); 
+m; m['MSFT', 'GOOG'] 
+@
+    \item selecting one row or column from a matrix 
+<<eval=FALSE>>=
+m[1,]; m[1,, drop=FALSE]; m[,3]; m[, 3, drop=FALSE]
+@
+    \item initializing a data frame from column data 
+<<eval=FALSE>>=
+pred1 <- c(4.01, 2.64, 6.03, 2.78); pred2 <- c(10.7, 12.2, 12.2, 15.0); 
+pred3 <- c('AM', 'PM', 'PM', 'AM'); resp <- c(11.5, 10.0, 9.2, 5.1);
+data.frame(pred1, pred2, pred3, resp)
+data.frame(p1 = pred1, p2 = pred2, p3 = pred3, r = resp)
+list.of.vectors <- list(p1 = pred1, p2 = pred2, p3 = pred3, r = resp)
+as.data.frame(list.of.vectors)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item initializing a data frame from row data  
+<<eval=FALSE>>=
+r1 <- data.frame(a = 1, b = 2, c = "X"); 
+r2 <- data.frame(a = 3, b = 4, c = "Y");
+r3 <- data.frame(a = 5, b = 6, c = "Z"); 
+r <- rbind(r1, r2, r3)
+@
+    \vfill\item appending rows to a data frame 
+<<eval=FALSE>>=
+r0 <- rbind(r, data.frame(a = 4, b = 10, c = 'u'), 
+               data.frame(a = 3, b = -1, c = 'xx'))
+@
+    \vfill\item removing NAs from a data frame 
+<<eval=FALSE>>=
+df <- data.frame(x = c(1, NA, 3, 4, 5), y = c(1, 2, NA, 4, 5))
+cumsum(na.omit(df))
+@
+    \vfill\item combining two data frames 
+<<eval=FALSE>>=
+df1 <- data.frame(a = c(1,2)); df2 <- data.frame(b = c(7,8)); cbind(df1, df2)
+df1 <- data.frame(x = c("a", "a"), y = c(5, 6))
+df2 <- data.frame(x = c("b", "b"), y = c(9, 10))
+rbind(df1, df2)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{table}[!htbp]
+    \centering
+    \caption{From One Data Structure to Another: HowTo}
+    \begin{tabular}{lllc}
+    \toprule
+    From & To & How & Note\\
+    vector & list & \comm{as.list(v)} & \ref{1}\\
+    vector & matrix & \comm{cbind(v)}, \comm{as.matrix(v)}, \comm{rbind(v)}, \comm{matrix(v, n, m)} & \\
+    vector & dataframe & \comm{as.data.frame(v)}, \comm{as.data.frame(rbind(v))} & \\
+    list & vector & \comm{unlist(v)} & \ref{2} \\
+    list & matrix & \comm{as.matrix(l)}, \comm{as.matrix(rbind(l))}, \comm{matrix(l, n, m)} & \\
+    list & dataframe & \comm{as.data.frame(l)} & \\
+    matrix & vector & \comm{as.vector(m)} & \\
+    matrix & list & \comm{as.list(m)} & \\
+    matrix & dataframe & \comm{as.data.frame(m)} & \\
+    dataframe & vector & \comm{df[1,]} or \comm{df[,1]}, \comm{df[[1]]} & \ref{3}\\
+    dataframe & list & \comm{as.list(df)} & \ref{4} \\
+    dataframe & matrix & \comm{as.matrix(df)} & \ref{5} \\
+    \bottomrule
+  \end{tabular}
+  \label{tbl:db}
+  \end{table}
+  \begin{enumerate}
+    \item\label{1} Don't use \comm{list(v)} ! 
+    \item\label{2} Use \comm{unlist} rather than \comm{as.vector}.
+    \item\label{3} This makes sense only if \comm{df} contains one row or one column.
+    \item\label{4} Using \comm{as.list} removes the \comm{class} attribute \comm{data.frame}.
+    \item\label{5} Note the coercion hierarchy: all elements will be coerced into the common denominator type!
+  \end{enumerate}
+\end{frame}
+
+\section{Programming}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item format of a function:
+<<eval=FALSE, size='small'>>=
+function_name <- function(argument1, argument2 = default_value2, ...) {
+    # ...
+    # rows with code to create some_object
+    # ...
+    return(some_object)
+}
+@
+    \item functions can access global variables
+<<size='small'>>=
+y_squared <- function() {
+    return(y^2)
+}
+y <- 2; y_squared()
+@
+    \item but operations on global variables inside functions won't affect global variables 
+<<size='small'>>=
+add_to_y <- function(n) {
+    y <- y + n
+}
+y <- 1; add_to_y(2); y
+@
+    \item use \comm{<<-} operator if you really need to change a global variable inside functions
+<<size='small'>>=
+add_to_y_global <- function(n) {
+    y <<- y + n
+}
+y <- 1; add_to_y_global(2); y
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item Define function \comm{avg(x)} to compute the average of \comm{x}
+<<size='small'>>=
+avg <- function(x) {
+    return(sum(x) / length(x))
+}
+@
+    \item See what happens for various inputs:
+<<size='small'>>=
+avg(c(2, 3, 6)); avg(c(TRUE, FALSE, TRUE, FALSE))
+avg(c('Moon', 'River', 'Wider', 'Than', 'A', 'MILE'))
+avg(data.frame(x = c(5, 2, 5), y = c(-3, -1, 13)))
+avg(data.frame(x = c(5, 2, 5), y = c('A', 'D', 'E')))
+@
+    \item Consequences of implicit \comm{return}
+<<size='small'>>=
+avg_bad <- function(x) {
+    avg <- sum(x) / length(x)
+}
+avg_ok <- function(x) {
+    sum(x) / length(x)
+}
+avg_bad(1:10)  # it's mute!
+avg_ok(1:10)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item Define function \comm{power\_n(x, n)} to compute \comm{x} to the power of \comm{n}
+<<>>=
+power_n <- function(x, n = 2){
+    return(x^n)
+}
+@
+    \item See what happens for various inputs:
+<<>>=
+power_n(3)    # using default  n = 2
+power_n(3, 3) # using supplied n = 3
+power_n(x = 5, n = 2)  # using named arguments
+power_n(n = 2, x = 5)  # ... even in wrong order
+power_n(n = 2)         # this is an error! 
+@
+    \item It is possible to apply function name as an argument
+<<>>=
+apply_to_first2 <- function(x, func) {
+    result <- func(x[1:2])
+    return(result)
+}
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item 
+<<>>=
+x <- c(1, 2, 3)
+apply_to_first2(x, sqrt)
+apply_to_first2(x, is.character)
+apply_to_first2(x, power_n)
+@
+    \item But what if we want to supply additional arguments to \comm{func}?
+<<>>=
+x <- c(1, 2, 3); apply_to_first2(x, sum)
+x <- c(NA, 2, 3); apply_to_first2(x, sum) # using sum(x, na.rm = TRUE) ...
+@   
+    \item \comm{...} comes to the rescue
+<<>>=
+apply_to_first2 <- function(x, func, ...) {
+    result <- func(x[1:2], ...)
+    return(result)
+}
+apply_to_first2(x, sum, na.rm = TRUE)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item An example of typical usage of \comm{if} \& \comm{else} 
+<<>>=
+reciprocal <- function(x) {
+  if (is.na(x)) { 
+      cat("Error! Division by NA.")
+  } else if (is.infinite(x)) {
+      cat("Error! Division by infinity.")
+  } else if (x == 0) {
+      cat("Error! Division by zero.")
+  } else { 
+      1 / x
+  }
+}
+reciprocal(2); reciprocal(0); reciprocal(-Inf); reciprocal(NA)
+@
+    \item \comm{ifelse}: the vector version of \comm{if} \& \comm{else}
+<<>>=
+x <- c(-1, 2, -100, 20, 50)
+ifelse(x > 0, 'positive', 'negative')
+@   
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item \comm{\&\&} is the short-circuited \comm{\&}. Note the difference:
+<<>>=
+# aa is a variable that doesn't exist; using && works:
+if (exists("aa") && aa > 0) {
+    cat("The variable aa exists and is positive.")
+} else { 
+    cat("aa doesn't exist or is negative.") 
+}
+
+# But using & doesn't, because it attempts to evaluate aa > 0 
+#     even though aa doesn't exist!
+if (exists("aa") & aa > 0) {
+    cat("The variable aa exists and is positive.")
+} else { 
+    cat("aa doesn't exist or is negative.") 
+}
+@
+  \end{itemize}
+\end{frame}
+
+%\section{R Language Definition}
+%
+%\begin{frame}[fragile]
+%  \frametitle{R Language Definition}
+%  \href{https://cran.r-project.org/doc/manuals/r-devel/R-lang.html}{Source: CRAN}
+%\end{frame}
+
+\section{References}
+
+\begin{frame}%[allowframebreaks]
+  \nocite{*}
+  \bibliographystyle{apalike}
+  \bibliography{r_base}
+\end{frame}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+  \frametitle{Examples Regarding Numbers}
+<<eval=FALSE>>=
+abs(-1); abs(3 + 4i)
+floor(5.7); ceiling(5.7)
+floor(-5.7); ceiling(-5.7)
+trunc(-5.7) 
+round(5.7); round(5.5)
+round(5.4); round(-5.7)
+signif(12345678, 4)
+signif(12345678, 5)
+signif(12345678, 6)
+# note that cos(pi / 2) is nonzero!
+sin(pi / 2); cos(pi / 2)
+119 %/% 13; 119 %% 13
+x <- c(3, 5, 7, 8)
+is.integer(x); is.numeric(x)
+# the wrong way of integer coercion
+x <- integer(x)
+# the correct way of integer coercion
+x <- as.integer(x)
+as.integer(5.7); as.integer(-5.7); 
+as.integer(5.7 - 3i)
+@
+\end{frame}

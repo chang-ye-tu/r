@@ -1,0 +1,320 @@
+---
+title: '`tidyverse`: First Encounter'
+date: "`r format(Sys.time(), '%d %B %Y')`" 
+output:
+  html_document:
+    theme: readable
+    highlight: tango
+    toc: true
+  pdf_document:
+    latex_engine: xelatex
+    extra_dependencies:
+      ctex: UTF8
+    number_sections: yes
+classoptions: hyperref, 12pt, a4paper
+---
+
+# `tidyverse`: First Encounter
+
+## Prerequisites
+
+### loading `tidyverse` 
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+### loading dataset `nycflights13`
+```{r, message=FALSE, warning=FALSE}
+library(nycflights13)
+```
+
+### print the sub dataset `flights` from `nycflights13`
+```{r}
+flights
+```
+
+## Choosing columns: `select`, `rename`
+
+### pick columns: `select()` 
+```{r}
+flights %>% select(carrier, flight)
+```
+
+### hide columns: `select()` with minus signs
+```{r}
+flights %>% select(-month, -day)
+```
+
+### hide a range of columns: range
+```{r results='hide'}
+flights %>% select(-(dep_time:arr_delay))
+```
+
+### hide any column with a matching name: `contains()`
+```{r results='hide'}
+flights %>% select(-contains("time"))
+```
+
+### pick columns using a character vector of column names
+```{r}
+cols <- c("carrier", "flight", "tailnum")
+flights %>% select(all_of(cols))
+```
+
+### `all_of()` vs `any_of()`
+```{r}
+cols <- c("carrier", "flight", "tailnum_ttt")
+flights %>% select(any_of(cols))
+```
+
+### rename columns with that all columns not mentioned are dropped: `select()`
+```{r}
+flights %>% select(tail = tailnum)
+```
+
+### rename columns with that all columns not mentioned are kept: `rename()`
+```{r}
+flights %>% rename(tail = tailnum)
+```
+
+## Choosing rows: `filter`, `between`, `slice`, `slice_sample`, `slice_max`, `distinct`
+
+### `filter()` supports the use of multiple conditions
+```{r}
+flights %>% filter(dep_time >= 600, dep_time <= 605)
+```
+
+### if numeric values fall in a range: use `between()` 
+```{r results='hide'}
+flights %>% filter(between(dep_time, 600, 605))
+```
+
+* side note: `is.na()` is useful when filtering
+```{ r results='hide'}
+flights %>% filter(!is.na(dep_time))
+```
+
+### filter rows by position: `slice()` 
+```{r}
+flights %>% slice(1000:1005)
+```
+
+### keep the first five rows within each group: `group_by()` then `slice(1:5)` 
+```{r}
+flights %>%
+    group_by(month, day) %>%
+    slice(1:5)
+```
+
+### sample three rows from each group: `group_by()` then `slice_sample(n = 3)` 
+```{r}
+flights %>%
+    group_by(month, day) %>%
+    slice_sample(n = 3)
+```
+
+### keep three rows from each group with the top `dep_delay`: `group_by()` then `slice_max(dep_delay, n = 3)`
+```{r}
+flights %>%
+    group_by(month, day) %>%
+    slice_max(dep_delay, n = 3)
+```
+
+### sort by `dep_delay` within each group: `group_by()`, `slice_max()`, then `arrange(desc(dep_delay))`
+```{r}
+flights %>%
+    group_by(month, day) %>%
+    slice_max(dep_delay, n = 3) %>%
+    arrange(desc(dep_delay))
+```
+
+### unique rows can be identified using `unique()` from base R
+```{r}
+flights %>%
+    select(origin, dest) %>%
+    unique()
+```
+
+### `tidyverse` provides an alternative that is more efficient: `distinct`
+```{r results='hide'}
+flights %>%
+    select(origin, dest) %>%
+    distinct()
+```
+
+* side note: when chaining, you don't have to include the parentheses if there are no arguments
+```{r results='hide'}
+flights %>%
+    select(origin, dest) %>%
+    distinct
+```
+
+## Adding new variables: `mutate`, `transmute`, `rownames_to_column`
+
+### create new variables and keep all existing variables: `mutate()` 
+```{r}
+flights %>% mutate(speed = distance / air_time * 60)
+```
+
+### create new variables only: `transmute()` 
+```{r}
+flights %>% transmute(speed = distance / air_time * 60)
+```
+
+### `rownames_to_column()` turns row names into an explicit variable
+```{r}
+mtcars %>%
+    rownames_to_column("model") %>%
+    head()
+
+# `tidyverse` does not print row names for local data frames
+mtcars %>% as_tibble()
+```
+
+## Grouping and counting: `summarise`, `tally`, `count`, `group_size`, `n_groups`, `ungroup`
+
+### count the number of rows in each group: `group_by()` then `summarize(cnt = n())`
+```{r}
+flights %>%
+    group_by(month) %>%
+    summarise(cnt = n())
+```
+
+### count the number of rows in each group: `group_by()` then `tally()`
+```{r}
+flights %>%
+    group_by(month) %>%
+    tally()
+```
+
+## Count the number of rows in each group: `count`
+```{r}
+flights %>% count(month)
+```
+
+### you can sort by the count: `arrange(desc(cnt))`
+```{r}
+flights %>%
+    group_by(month) %>%
+    summarise(cnt = n()) %>%
+    arrange(desc(cnt))
+```
+
+### `tally()` and `count()` have a sort parameter for this purpose
+```{r results='hide'}
+flights %>%
+    group_by(month) %>%
+    tally(sort = TRUE)
+
+flights %>% count(month, sort = TRUE)
+```
+
+### you can sum over a specific variable instead of simply counting rows
+```{r}
+flights %>%
+    group_by(month) %>%
+    summarize(dist = sum(distance))
+```
+
+### `tally()` and `count()` have a wt parameter for this purpose
+```{r results='hide'}
+flights %>%
+    group_by(month) %>%
+    tally(wt = distance)
+
+flights %>% count(month, wt = distance)
+```
+
+### return the counts as a vector: `group_size()` 
+```{r}
+flights %>%
+    group_by(month) %>%
+    group_size()
+```
+
+### report the number of groups: `n_groups()` 
+```{r}
+flights %>%
+    group_by(month) %>%
+    n_groups()
+```
+
+### group by two variables, `summarise`, `arrange` (output is possibly confusing)
+```{r}
+flights %>%
+    group_by(month, day) %>%
+    summarise(cnt = n()) %>%
+    arrange(desc(cnt)) %>%
+    print(n = 10)
+```
+
+### arrange across all groups: `ungroup()` before arranging 
+```{r}
+flights %>%
+    group_by(month, day) %>%
+    summarise(cnt = n()) %>%
+    ungroup() %>%
+    arrange(desc(cnt))
+```
+
+## Creating data frames: `tibble`
+
+`tibble()` is a better way than `data.frame()` for creating data frames. Benefits of `tibble()`:
+
+* You can use previously defined columns to compute new columns
+* It never coerces column types
+* It never munges column names
+* It never adds row names 
+* It only recycles length 1 input
+* It returns a local data frame
+
+### `tibble()` example
+```{r}
+tibble(a = 1:6, b = a * 2, c = "string", "d+e" = 1) %>% glimpse()
+```
+### `data.frame()` example
+```{r}
+data.frame(a = 1:6, c = "string", "d+e" = 1) %>% glimpse()
+```
+
+## Viewing more output: `print`, `View`
+
+### specify that you want to see more rows
+```{r}
+flights %>% print(n = 15)
+```
+
+### specify that you want to see ALL rows (don't run this!)
+```{r eval=FALSE}
+#flights %>% print(n = Inf)
+```
+
+### specify that you want to see all columns
+```{r}
+flights %>% print(width = Inf)
+```
+
+### show up to 1000 rows and all columns
+```{r eval=FALSE}
+flights %>% View
+
+# set option to see all columns and fewer rows
+#options(dplyr.width = Inf, dplyr.print_min = 6)
+
+# reset options (or just close R)
+#options(dplyr.width = NULL, dplyr.print_min = 10)
+```
+
+## Plotting: `ggplot2`
+
+```{r}
+flights %>%
+    group_by(dest) %>%
+    summarize(count = n(),
+              dist = mean(distance, na.rm = TRUE),
+              delay = mean(arr_delay, na.rm = TRUE)) %>%
+    filter(delay > 0, count > 20, dest != "HNL") %>%
+    ggplot(mapping = aes(x = dist, y = delay)) +
+    geom_point(aes(size = count), alpha = 1 / 3) +
+    geom_smooth(se = FALSE)
+```

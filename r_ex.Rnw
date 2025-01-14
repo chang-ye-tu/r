@@ -1,0 +1,674 @@
+\documentclass[12pt,a4paper]{extarticle} 
+\usepackage{amsmath,amssymb,amsthm,graphicx,tabularx,booktabs,answers}
+\usepackage[margin=2cm]{geometry}
+
+%% https://tex.stackexchange.com/questions/504814/package-hyperref-warning-token-not-allowed-in-a-pdf-string-pdfdocencoding/559193
+\usepackage[bookmarks,bookmarksnumbered]{hyperref}
+%\hypersetup{colorlinks=true,linkcolor=blue,anchorcolor=red,citecolor=blue,filecolor=red,urlcolor=red,pdfauthor=author}
+\hypersetup{pdfauthor=author}
+
+%% https://tex.stackexchange.com/questions/26543/hyperlink-with-answers-package
+\newcounter{moncompteur}
+\theoremstyle{definition}
+\newtheorem{ex}{%
+  \hyperlink{ex:\theex}{Exercise}\hypertarget{sol:\theex}{}}
+\Newassociation{sol}{Soln}{corr}
+\renewenvironment{Soln}[1]
+  {\par\bigskip\noindent{\bfseries\hypertarget{ex:#1}{}\hyperlink{sol:#1}{Solution to Exercise #1}}\quad}
+  {\par\bigskip}
+
+\newcommand\expc{{\sf E}}
+\newcommand\prb{{\sf P}}
+\newcommand\bigO{\mathcal{O}}
+\DeclareMathOperator\var{var}
+\DeclareMathOperator\cov{cov}
+\DeclareMathOperator\corr{corr}
+\DeclareMathOperator\rk{rank}
+
+\newcommand{\comm}[1]{\textcolor[rgb]{0.737,0.353,0.396}{{\tt #1}}}%
+
+\begin{document}
+
+\Opensolutionfile{corr}[ans1]
+
+\title{R Fundamentals: Exercises and Solutions}
+\author{}
+
+\maketitle
+
+\section*{Exercises}
+
+<<include = FALSE>>=
+knitr::opts_chunk$set(comment = '#', fig.align = 'center')
+@
+
+\begin{ex}
+  Write a function \comm{mymax} which receives a vector \comm{v} and return its greatest element. For example, 
+<<echo=FALSE, comment=''>>=
+mymax <- function(v) {
+  m <- -Inf
+  for (i in seq(v)) {
+      if (v[i] > m) {
+          m <- v[i]
+      }
+  }
+  m
+}
+@
+<<comment=''>>=
+mymax(c(1, 5, -2, 3, -3))
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE>>=
+mymax <- function(v) {
+  m <- -Inf
+  for (i in seq(v)) {
+      if (v[i] > m) {
+          m <- v[i]
+      }
+  }
+  m
+}
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Write a function \comm{optimum} that takes a vector \comm{v} as input and returns a vector containing its minimum and maximum using built-in function \comm{sort}.
+  \begin{sol}
+<<>>=
+optimum <- function(v) {
+    # Sort x so that the minimum becomes the first element
+    #            and the maximum becomes the last element:
+    sorted_x <- sort(v)
+    min_x <- sorted_x[1]
+    max_x <- sorted_x[length(sorted_x)]
+    return(c(min_x, max_x))
+}
+@
+
+Check that this works:
+<<>>=
+x <- c(3, 8, 1, 4, 5)
+optimum(x) # Should be 1, 8
+@
+  \end{sol}
+\end{ex}
+
+\begin{ex}
+  Write a function \comm{mean2} that computes the mean of the squared values of a vector \comm{v} using \comm{mean}, and that takes additional arguments that it passes on to \comm{mean} (e.g. \comm{na.rm}).
+  \begin{sol}
+<<>>=
+mean2 <- function(v, ...) {
+    return(mean(v^2, ...))
+}
+@
+  Check that this works:
+<<>>=
+x <- c(3, 2, 1)
+mean2(x) # Should be 14 / 3 = 4.666...
+
+x <- c(3, 2, NA)  # With NA
+mean2(x) # Should be NA
+mean2(x, na.rm = TRUE) # Should be 13 / 2 = 6.5
+@
+  \end{sol}
+\end{ex}
+
+\begin{ex}
+  Fix the errors in the following code:
+<<eval=FALSE>>=
+x <- c(1, 2, pi, 8)
+
+# Only compute square roots if x exists and contains positive values:
+if (exists(x)) {if (x > 0) {sqrt(x)}}
+@
+  \begin{sol}
+    There are two errors: the variable name in \comm{exists} is not between quotes and \comm{x > 0} evaluates to a vector an not a single value. The goal is to check that all values in \comm{x} are positive, so \comm{all} can be used to collapse the logical vector \comm{x > 0}:
+<<>>=
+x <- c(1, 2, pi, 8)
+
+# Errors
+if (exists(x)) {if (x > 0) {sqrt(x)}}
+
+# Still not right
+if (exists("x")) {if (x > 0) {sqrt(x)}}
+
+# Only compute square roots if x exists and contains positive values:
+if (exists("x")) {if (all(x > 0)) {sqrt(x)}}
+@
+
+  Alternatively, we can get a better looking solution by using \comm{\&\&}:
+<<>>=
+if (exists("x") && all(x > 0)) {sqrt(x)}
+@
+  \end{sol}
+\end{ex}
+
+\begin{ex}
+  The function \comm{list.files} can be used to create a vector containing the names of all files in a folder. The \comm{pattern} argument can be used to supply a regular expression describing a file name pattern. For instance, if \comm{pattern = "\textbackslash\textbackslash.tex\$"} is used, only \comm{.tex} files will be listed. Create a function \comm{printtex} that loops over all \comm{.tex} files in \comm{folder} and prints the name of each \comm{.tex} file.
+  \begin{sol}
+<<>>=
+printtex <- function(folder) {
+    files <- list.files(folder, pattern = "\\.tex$")
+    for (file in files) {
+        cat(file, "\n")
+    }
+}
+# Test example
+#printtex('/home/cytu/Downloads/CLP1Slides/src/sections')
+@
+  \end{sol}
+\end{ex}
+
+\begin{ex}
+  An alternative to standardization is \emph{normalization}, where all \comm{numeric} variables are rescaled so that their smallest value is $0$ and their largest value is $1$. Write a function \comm{normalize} that normalises the variables in a data frame containing \comm{numeric} columns.
+  \begin{sol}
+<<>>=
+normalize <- function(df, ...) {
+    for (i in seq_along(df)) {
+        df[,i] <- (df[,i] - min(df[,i], ...)) / 
+                  (max(df[,i], ...) - min(df[,i], ...))
+    }
+    return(df)
+}
+
+aqn <- normalize(airquality, na.rm = TRUE)
+summary(aqn)
+@
+  \end{sol}
+\end{ex}
+
+\begin{ex}
+  Here we are working with the built-in dataset \comm{Nile}.
+  \begin{enumerate}
+    \item What does the following mean? 
+<<eval=FALSE>>=
+sum(Nile > 1200)
+@
+    \item And this?
+<<eval=FALSE>>=
+gt1200 <- which(Nile > 1200)
+@
+    \item And this?
+<<eval=FALSE>>=
+nile_gt_1200 <- Nile[which(Nile > 1200)]
+mean(nile_gt_1200)
+@
+    \item Write a function \comm{mgt} that receive a vector \comm{x} and a value \comm{val} that returns the mean of the subset of \comm{x} which are greater than \comm{val}.
+    \item Write a function \comm{n0} that receive a numeric vector \comm{x} and report the number of 0's. 
+    \item Write a function \comm{rng} that receive a numeric vector \comm{x} and report the difference between the maximal and the minimal elements of \comm{x}.
+    \item Investigate the built-in function \comm{range} when applying to \comm{Nile}.
+<<eval=FALSE>>=
+range(Nile)
+@
+Write a function \comm{myrange} to replicate the result.
+  \end{enumerate}
+\begin{sol}
+  \leavevmode
+<<eval=FALSE>>=
+mgt <- function(x, val) {
+    return(mean(x[x > val]))
+}
+
+n0 <- function(x) {
+    return(sum(x == 0))
+}
+
+rng <- function(x) {
+    return(max(x) - min(x))
+}
+
+myrange <- function(x) {
+    return(c(min(x), max(x)))
+}
+@
+\end{sol}
+\end{ex}
+
+
+\begin{ex}
+  Using \comm{c}, \comm{seq}, \comm{rep}, \comm{sequence}, \comm{month.abb}, etc. to generate the following vectors:
+<<echo=FALSE, eval=TRUE, comment=''>>=
+cat(rep(1:5, 5:1))
+cat(seq(1, 20, 3))
+cat(rep(LETTERS[1:5], 5:1))
+cat(c(letters[c(F, T)], letters[c(T, F)])) 
+cat(seq(3, 40, 4))
+cat(rep(c(1, 4), c(3, 2)))
+cat(rep(seq(2, 20, 2), each = 2))
+cat(c(month.abb[c(T, F)], month.abb[c(F, T)]))
+cat(sequence(rep(4, 5), from = 8:4, by = -1))
+cat(sequence(6:1, from = 1:6))
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE>>=
+cat(rep(1:5, 5:1))
+cat(seq(1, 20, 3))
+cat(rep(LETTERS[1:5], 5:1))
+cat(c(letters[c(F, T)], letters[c(T, F)])) 
+cat(seq(3, 40, 4))
+cat(rep(c(1, 4), c(3, 2)))
+cat(rep(seq(2, 20, 2), each = 2))
+cat(c(month.abb[c(T, F)], month.abb[c(F, T)]))
+cat(sequence(rep(4, 5), from = 8:4, by = -1))
+cat(sequence(6:1, from = 1:6))
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  If we have the vector \comm{colors}:
+<<eval=TRUE, comment=''>>=
+colors <- c('red', 'yellow', 'orange', 'beige')
+@
+Using \comm{paste}, \comm{paste0} with the vector \comm{colors} to generate the following four string vectors
+<<echo=FALSE, comment=''>>=
+paste(colors, 'flowers') 
+paste0(colors, 'flowers')
+paste('several', colors)
+paste('I like', paste(colors, collapse = ', '), 'colors')
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE, comment=''>>=
+colors <- c('red', 'yellow', 'orange', 'beige')
+paste(colors, 'flowers') 
+paste0(colors, 'flowers')
+paste('several', colors)
+paste('I like', paste(colors, collapse = ', '), 'colors')
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Write a function \comm{mysum} that receive \comm{n}, \comm{r} and compute $\sum_{k=0}^n r^k$. Compare with the exact result $\frac{1-r^{n+1}}{1-r}$ for $r=1.08$ and $n=10, 40, 100$.
+\begin{sol}
+  \leavevmode
+<<comment=''>>=
+mysum <- function(n, r) {
+    ans <- 0
+    for (i in 0:n) {
+        ans <- ans + r^i
+    }
+    ans
+}
+mysum(100, 1.08); (1 - 1.08^(100 + 1)) / (1 - 1.08)
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Write a function \comm{fibon} that receive \comm{n} and return the vector of the first \comm{n} terms of the Fibonacci series: $1, 1, 2, 3, 5, 8, 13,\ldots$. For example,
+<<echo=FALSE, eval=TRUE, comment=''>>=
+fibon <- function(n) {
+    v <- vector(length=n)
+    v[1] <- 1; v[2] <- 1
+    for (i in 3:n) {
+        v[i] <- v[i - 1] + v[i - 2]
+    }
+    v
+}
+@
+<<comment=''>>=
+fibon(30)
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE>>=
+fibon <- function(n) {
+    v <- vector(length=n)
+    v[1] <- 1 
+    v[2] <- 1
+    for (i in 3:n) {
+        v[i] <- v[i - 1] + v[i - 2]
+    }
+    v
+}
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Using the built-in function \comm{nchar}, write a function \comm{mycount} that receives a vector of words and return a vector consisting of 3 numbers: the length of the shortest word, the length of the longest word, and the average word length. For example,  
+<<echo=FALSE, comment=''>>=
+mycount <- function(v) {
+    x <- nchar(v)
+    return(c(min(x), max(x), sum(x) / length(x))) 
+}
+@
+<<comment=''>>=
+mycount(c('we', 'are', 'the', 'champions', 'right'))
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE>>=
+mycount <- function(v) {
+    x <- nchar(v)
+    return(c(min(x), max(x), sum(x) / length(x))) 
+}
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Write a function \comm{testfreq} that receives a word and return a list of the number of occurences of each alphabet in the word. For example, 
+<<echo=FALSE, eval=TRUE, comment=''>>=
+testfreq <- function(word) {
+    l <- list()
+    for (i in 1:nchar(word)) {
+        w <- substr(word, i, i)
+        if (is.null(l[[w]])) {
+            l[[w]] <- 1
+        } else {
+            l[[w]] <- l[[w]] + 1
+        }
+    }
+    l
+}
+@
+<<comment=''>>=
+testfreq('mississippi')
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE>>=
+testfreq <- function(word) {
+    l <- list()
+    for (i in 1:nchar(word)) {
+        w <- substr(word, i, i)
+        if (is.null(l[[w]])) {
+            l[[w]] <- 1
+        } else {
+            l[[w]] <- l[[w]] + 1
+        }
+    }
+    l
+}
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Using loop and the built-in function \comm{cat}, write a function \comm{mytree} that receive \comm{n} that produce the 'tree' in the console. For example, \comm{mytree(5)} gives 
+<<echo=FALSE, comment=''>>=
+mytree <- function(n) {
+    for (i in c(1:n, (n-1):1)) {
+        cat(rep('*', i), '\n')
+    }
+}
+mytree(5)
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE, comment=''>>=
+mytree <- function(n) {
+    for (i in c(1:n, (n-1):1)) {
+        cat(rep('*', i), '\n')
+    }
+}
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Using double \comm{for} loop to produce the following pattern: 
+<<echo=FALSE, comment=''>>=
+for (i in 1:5) {
+    for (j in 1:i) {
+        cat(j, ' ')
+    }    
+    cat('\n')
+}
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE, comment=''>>=
+for (i in 1:5) {
+    for (j in 1:i) {
+        cat(j, ' ')
+    }    
+    cat('\n')
+}
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Using \comm{for} loop to print the multplication table like
+<<echo=FALSE, comment=''>>=
+for (i in 1:9) {
+    for (j in 1:9) {
+        cat(sprintf("%ix%i=%2i  ", i, j, i * j))
+    }
+    cat('\n')
+}
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE, comment=''>>=
+for (i in 1:9) {
+    for (j in 1:9) {
+        cat(sprintf("%ix%i=%2i  ", i, j, i * j))
+    }
+    cat('\n')
+}
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Sum
+  \begin{enumerate}
+    \item $\sum_{k=1}^{10000} k $
+    \item $\sum_{k=1}^{100}\min\{2^k, k^4\}$
+  \end{enumerate}
+   with and without loops. 
+\begin{sol} 
+  \leavevmode
+<<>>=
+ans <- 0
+for (i in 1:10000) {
+    ans <- ans + i
+}
+ans
+
+sum(1:10000)
+
+ans <- 0
+for (k in 1:100) {
+    ans <- ans + min(2^k, k^4)
+}
+ans
+
+v = 1:100; sum(pmin(2^v, v^4))
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Sum a vector \comm{x} with loops. 
+\begin{sol}
+  \leavevmode
+<<>>=
+my_sum <- function(x) {
+    ans <- 0
+    for (i in 1:length(x)) {
+        ans <- ans + x[i]
+    }
+    ans
+}
+my_sum(1:100)
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Write a function \comm{myprod} to replicate the built-in function \comm{prod}.
+\begin{sol}
+  \leavevmode
+<<>>=
+myprod <- function(x) {
+    ans <- 1 
+    for (i in seq(x)) {
+        ans <- ans * x[i]
+    }
+    ans
+}
+myprod(1:10)
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Define the series $S_n = \sum_{i=1}^n\frac{(-1)^{i+1}}{2i-1} = 1 - \frac{1}{3} + \frac{1}{5} - \frac{1}{7} + \cdots + \frac{(-1)^{n+1}}{2 n-1}$, we know that $S_n\to\frac{\pi}{4}$. Verify this fact by computing $4S_{1000}$, $4S_{10000}$, $4S_{100000}$. 
+\begin{sol}
+  \leavevmode
+<<comment=''>>=
+mypi <- function(m) {
+    n <- 1:m
+    sum((-1)^(n+1)/(2 * n - 1)) * 4
+}
+4 * mypi(1000); 4 * mypi(10000); 4 * mypi(100000)
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Define $a_n=\frac{n+3}{n+8}$, $b_n=\frac{2n^2 + 3}{2n^2 +8n}$, $c_n=\frac{\sqrt{n}}{\sqrt{n}+2}$; we know that $$\lim_{n\to\infty}a_n=\lim_{n\to\infty}b_n = \lim_{n\to\infty}c_n=1.$$ Reproduce the following:
+<<echo=FALSE, comment=''>>=
+n <- c(1, seq(10, 100, 10), 10000)
+an <- (n + 3) / (n + 8)
+bn <- (2 * n^2 + 3) / (2 * n^2 + 8 * n)
+cn <- sqrt(n) / (sqrt(n) + 2)
+(l <- data.frame(n, an, bn, cn))
+@
+\begin{sol}
+  \leavevmode
+<<eval=FALSE>>=
+n <- c(1, seq(10, 100, 10), 10000)
+an <- (n + 3) / (n + 8)
+bn <- (2 * n^2 + 3) / (2 * n^2 + 8 * n)
+cn <- sqrt(n) / (sqrt(n) + 2)
+(l <- data.frame(n, an, bn, cn))
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Generate an integer vector \comm{number} of length 1000 as follows: 
+<<>>=
+set.seed(123456); number <- sample(0:100, 1000, replace = T)
+@
+Report the position of the 100th even integer by two different ways (\comm{for} loop, \comm{which}). 
+\begin{sol}
+  \leavevmode
+<<comment=''>>=
+j <- 0
+for (i in 1:length(number)) {
+     if (number[i] %% 2 == 0) {
+         j <- j + 1
+         if (j == 100) {
+             cat(sprintf('The 100th number is %d, at place %d', number[i], i))
+             break
+         }
+     }
+}
+
+(nn <- which(number %% 2 == 0)[100]); number[nn]
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  Set \comm{tg} as the built-in data frame \comm{ToothGrowth}.
+  \begin{enumerate}
+    \item Compute mean tooth length for supplement VC and OJ.
+    \item Extract the sub data frame from \comm{tg} with supplement OJ and length $< 8.8$.
+    \item Extract the sub data frame from \comm{tg} with length $> 28$ or dose $=1.0$.
+  \end{enumerate}
+\begin{sol}
+  \leavevmode
+  \begin{enumerate}
+    \item
+<<>>=
+tg <- ToothGrowth
+tg_vc <- tg[tg$supp == 'VC',]
+tg_oj <- tg[tg$supp == 'OJ',]
+mean(tg_vc$len)
+mean(tg_oj$len)
+@
+   \item
+<<>>=
+tg[tg$supp == 'OJ' & tg$len < 8.8,]
+@
+   \item
+<<>>=
+w <- tg[tg$len == 28 | tg$dose == 1.0,]; head(w)
+@
+  \end{enumerate}
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  In \comm{mtcars}, split the miles-per-gallon (mpg) data according to the number of cylinders (cyl).
+  \begin{sol}
+    \leavevmode
+<<>>=
+(mtl <- split(mtcars$mpg, mtcars$cyl))
+@
+  \end{sol}
+\end{ex}
+
+\begin{ex}
+  Imaging you have (age, gender) pairs as follows: 
+<<>>=
+age <- c(20, 16, 38, 55, 25)
+gender <- c('M', 'F', 'M', 'F', 'F')
+@
+Split \comm{age} into groups according to the corresponding elements of \comm{gender} and find the mean in each group.
+\begin{sol}
+  \leavevmode
+<<>>=
+(z <- tapply(age, gender, mean))
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+Using \comm{tapply} in \comm{tg} to compute the mean length for each supplement group.
+\begin{sol}
+  \leavevmode
+<<>>=
+tapply(tg$len, tg$supp, mean)
+@
+\end{sol}
+\end{ex}
+
+\begin{ex}
+  In the built-in data \comm{mtcars}
+  \begin{enumerate}
+    \item Find how many cars there are in each cylinder category. 
+    \item Find mean and standard deviation of miles per gallon in each cylinder category.
+  \end{enumerate}
+  \begin{sol}
+  \leavevmode
+<<>>=
+tapply(mtcars$cyl, mtcars$cyl, length)
+tapply(mtcars$mpg, mtcars$cyl, mean)
+tapply(mtcars$mpg, mtcars$cyl, sd)
+@
+\end{sol}
+\end{ex}
+
+\Closesolutionfile{corr}
+
+\newpage
+\section*{Solutions}
+\input{ans1}
+
+%\bibliographystyle{plainnat}
+%\bibliography{}
+\end{document}

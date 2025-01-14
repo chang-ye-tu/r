@@ -1,0 +1,520 @@
+\documentclass[8pt,usenames,dvipsnames]{beamer}
+\usepackage{booktabs}
+
+%\usepackage[useregional]{datetime2}
+\usepackage{datetime2}
+
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+% XXX https://tex.stackexchange.com/questions/216435/how-do-i-properly-label-the-figures-and-tables-in-beamer-in-share-latex
+\setbeamertemplate{caption}[numbered]{} % Number float-like environments
+
+\setbeamertemplate{footline}[text line]{%
+  \parbox{\linewidth}{\vspace*{-8pt}
+  \DTMnow\hfill\href{https://github.com/chang-ye-tu/r}{https://github.com/chang-ye-tu/r}\hfill
+  \hyperlink{toc}{TOC} ~~ \insertframenumber / \inserttotalframenumber~~~~~~~~~}}
+\setbeamertemplate{navigation symbols}[only frame symbol]
+
+% white letters in enumerate bullet points
+%\definecolor{stupidblue}{RGB}{51,51,178}
+\setbeamercolor{item projected}{fg=white}%fg=blue,bg=red!75!black} % fg=white , bg=stupidblue
+\setbeamercolor{frametitle}{fg=black}
+% Block title color
+\setbeamercolor{block title}{fg=white}%fg=blue,bg=red!75!black} % white
+%\setbeamertemplate{item projected}[square]
+
+\definecolor{foo}{rgb}{.2,.2,.7}
+\AtBeginSection[]{
+    \begin{frame}
+    \vfill
+    \centering
+    \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{section page}
+        \usebeamerfont{title}%
+        {\color{foo} \insertsectionhead}\par%
+    \end{beamercolorbox}
+    \vfill
+    \end{frame}
+}
+
+% https://tex.stackexchange.com/questions/30423/bibliography-in-beamer
+
+\setbeamertemplate{bibliography entry title}{}
+\setbeamertemplate{bibliography entry location}{}
+\setbeamertemplate{bibliography entry note}{}
+
+\newtheorem*{alg}{Algorithm}
+\DeclareMathOperator\prb{{\sf P}}
+\DeclareMathOperator\expc{{\sf E}}
+\DeclareMathOperator\var{var}
+\DeclareMathOperator\cov{cov}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+\DeclareMathOperator*{\argmin}{\arg\!\min}
+\usepackage{dsfont} % indicator function \mathds{1}
+\DeclareMathOperator\indc{\mathds{1}}
+\DeclareMathOperator\corr{corr}
+\DeclareMathOperator\rk{rank}
+
+\newcommand{\comm}[1]{\textcolor[rgb]{0.737,0.353,0.396}{{\tt #1}}}%
+
+\setbeamertemplate{headline}{}
+
+\title{Data Science and R: {\tt tidyverse}}
+\author{Chang-Ye Tu}
+\date{}
+
+\begin{document}
+
+<<include=FALSE>>=
+knitr::opts_chunk$set(comment = '#', fig.align = 'center')
+@
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\subsection*{Outline}
+\begin{frame}
+  \tableofcontents
+\end{frame}
+
+\section{Data Wrangling: \comm{dplyr}}
+
+\begin{frame}[fragile]
+  \frametitle{Prerequisites}
+  \begin{itemize}
+    \item loading \comm{tidyverse} 
+<<message=FALSE, warning=FALSE>>=
+library(tidyverse)
+@
+    \item loading dataset \comm{nycflights13}
+<<message=FALSE, warning=FALSE>>=
+library(nycflights13)
+@
+    \item print the sub dataset \comm{flights} from \comm{nycflights13}
+<<size='small'>>=
+flights
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Choosing columns: \comm{select}, \comm{rename}}
+
+\begin{frame}[fragile]
+  \frametitle{Choosing columns: \comm{select}, \comm{rename}}
+  \begin{itemize}
+    \item pick columns: \comm{select()} 
+<<>>=
+flights %>% select(carrier, flight)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item hide columns: \comm{select()} with minus signs
+<<>>=
+flights %>% select(-month, -day)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item hide a range of columns: range
+<<results='hide'>>=
+flights %>% select(-(dep_time:arr_delay))
+@
+    \item hide any column with a matching name: \comm{contains()}
+<<results='hide'>>=
+flights %>% select(-contains("time"))
+@
+\item pick columns using a character vector of column names
+<<>>=
+cols <- c("carrier", "flight", "tailnum")
+flights %>% select(all_of(cols))
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item \comm{all\_of()} vs \comm{any\_of()}
+<<>>=
+cols <- c("carrier", "flight", "tailnum_ttt")
+flights %>% select(any_of(cols))
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item rename columns with that all columns not mentioned are dropped: \comm{select()}
+<<>>=
+flights %>% select(tail = tailnum)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item rename columns with that all columns not mentioned are kept: \comm{rename()}
+<<size='small'>>=
+flights %>% rename(tail = tailnum)
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Choosing rows: \comm{filter}, \comm{between}, \comm{slice}, \comm{slice\_sample}, \comm{slice\_max}, \comm{distinct}}
+
+\begin{frame}[fragile]
+  \frametitle{Choosing rows: \comm{filter}, \comm{between}, \comm{slice}, \comm{slice\_sample}, \comm{slice\_max}, \comm{distinct}}
+  \begin{itemize}
+    \item \comm{filter()} supports the use of multiple conditions
+<<size='small'>>=
+flights %>% filter(dep_time >= 600, dep_time <= 605)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item if numeric values fall in a range: use \comm{between()} 
+<<results='hide'>>=
+flights %>% filter(between(dep_time, 600, 605))
+@
+    \item \comm{is.na()} is useful when filtering
+<<results='hide'>>=
+flights %>% filter(!is.na(dep_time))
+@
+
+    \item filter rows by position: \comm{slice()} 
+<<>>=
+flights %>% slice(1000:1005)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item keep the first five rows within each group: \comm{group\_by()} then \comm{slice(1:5)} 
+<<size='small'>>=
+flights %>%
+  group_by(month, day) %>%
+  slice(1:5)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item sample three rows from each group: \comm{group\_by()} then \comm{slice\_sample(n = 3)} 
+<<size='small'>>=
+flights %>%
+  group_by(month, day) %>%
+  slice_sample(n = 3)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item keep three rows from each group with the top \comm{dep\_delay}: \comm{group\_by()} then \comm{slice\_max(dep\_delay, n = 3)}
+<<size='small'>>=
+flights %>%
+  group_by(month, day) %>%
+  slice_max(dep_delay, n = 3)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item sort by \comm{dep\_delay} within each group: \comm{group\_by()}, \comm{slice\_max()}, then \comm{arrange(desc(dep\_delay))}
+<<size='small'>>=
+flights %>%
+  group_by(month, day) %>%
+  slice_max(dep_delay, n = 3) %>%
+  arrange(desc(dep_delay))
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item unique rows can be identified using \comm{unique()} from base R
+<<>>=
+flights %>%
+  select(origin, dest) %>%
+  unique()
+@
+    \item \comm{tidyverse} provides an alternative that is more efficient: \comm{distinct}
+<<results='hide'>>=
+flights %>%
+  select(origin, dest) %>%
+  distinct()
+# you don't have to include the parentheses if there are no arguments
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Adding new variables: \comm{mutate}, \comm{transmute}, \comm{rownames\_to\_column}}
+
+\begin{frame}[fragile]
+  \frametitle{Adding new variables: \comm{mutate}, \comm{transmute}, \comm{rownames\_to\_column}}
+  \begin{itemize}
+    \item create new variables and keep all existing variables: \comm{mutate()} 
+<<size='small'>>=
+flights %>% mutate(speed = distance / air_time * 60)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item create new variables only: \comm{transmute()} 
+<<>>=
+flights %>% transmute(speed = distance / air_time * 60)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item \comm{rownames\_to\_column()} turns row names into an explicit variable
+<<size='small'>>=
+mtcars %>%
+  rownames_to_column("model") %>%
+  head()
+
+# tidyverse does not print row names for local data frames
+mtcars %>% as_tibble()
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Grouping and counting: \comm{group\_by}, \comm{summarize}, \comm{tally}, \comm{count}, \comm{group\_size}, \comm{n\_groups}, \comm{ungroup}}
+
+\begin{frame}[fragile]
+  \frametitle{Grouping and counting: \comm{group\_by}, \comm{summarize}, \comm{tally}, \comm{count}, \comm{group\_size}, \comm{n\_groups}, \comm{ungroup}}
+  \begin{itemize}
+    \item count the number of rows in each group: \comm{group\_by()} then \comm{summarize(cnt = n())}
+<<>>=
+flights %>%
+  group_by(month) %>%
+  summarize(cnt = n())
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item count the number of rows in each group: \comm{group\_by()} then \comm{tally()}
+<<>>=
+flights %>%
+  group_by(month) %>%
+  tally()
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item count the number of rows in each group: \comm{count()}
+<<>>=
+flights %>% count(month)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item you can sort by the count: \comm{arrange(desc(cnt))}
+<<>>=
+flights %>%
+  group_by(month) %>%
+  summarize(cnt = n()) %>%
+  arrange(desc(cnt))
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item \comm{tally()} and \comm{count()} have a sort parameter for this purpose
+<<results='hide'>>=
+flights %>%
+  group_by(month) %>%
+  tally(sort = TRUE)
+flights %>% count(month, sort = TRUE)
+@
+    \item you can sum over a specific variable instead of simply counting rows
+<<>>=
+flights %>%
+  group_by(month) %>%
+  summarize(dist = sum(distance))
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item \comm{tally()} and \comm{count()} have a wt parameter for this purpose
+<<results='hide'>>=
+flights %>%
+  group_by(month) %>%
+  tally(wt = distance)
+flights %>% count(month, wt = distance)
+@
+    \item return the counts as a vector: \comm{group\_size()} 
+<<>>=
+flights %>%
+  group_by(month) %>%
+  group_size()
+@
+    \item report the number of groups: \comm{n\_groups()} 
+<<>>=
+flights %>%
+  group_by(month) %>%
+  n_groups()
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item group by two variables, \comm{summarize()}, \comm{arrange()} (output is possibly confusing)
+<<>>=
+flights %>%
+  group_by(month, day) %>%
+  summarize(cnt = n()) %>%
+  arrange(desc(cnt)) %>%
+  print(n = 10)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+    \item arrange across all groups: \comm{ungroup()} before arranging 
+<<>>=
+flights %>%
+  group_by(month, day) %>%
+  summarize(cnt = n()) %>%
+  ungroup() %>%
+  arrange(desc(cnt))
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Creating data frames: \comm{tibble}}
+
+\begin{frame}[fragile]
+  \frametitle{Creating data frames: \comm{tibble}}
+  \begin{itemize}
+    \item \comm{tibble()} is a better way than \comm{data.frame()} for creating data frames. Benefits of \comm{tibble()}:
+      \begin{itemize}
+        \item You can use previously defined columns to compute new columns.
+        \item It never coerces column types.
+        \item It never munges column names.
+        \item It never adds row names. 
+        \item It only recycles length 1 input.
+        \item It returns a local data frame (a \comm{tbl\_df}).
+      \end{itemize}
+    \item \comm{tibble()}, \comm{data.frame()} examples
+<<>>=
+tibble(a = 1:6, b = a * 2, c = "string", "d+e" = 1) %>% glimpse()
+data.frame(a = 1:6, c = "string", "d+e" = 1) %>% glimpse()
+@
+  \end{itemize}
+\end{frame}
+
+\subsection{Viewing more output: \comm{print}, \comm{View}}
+
+\begin{frame}[fragile]
+  \frametitle{Viewing more output: \comm{print}, \comm{View}}
+  \begin{itemize}
+    \item specify that you want to see more rows
+<<size='small'>>=
+flights %>% print(n = 15)
+@
+    \item specify that you want to see ALL rows (don't run this!)
+<<eval=FALSE, size='small'>>=
+flights %>% print(n = Inf)
+@
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize} 
+    \item specify that you want to see all columns
+<<size='scriptsize'>>=
+flights %>% print(width = Inf)
+@
+  \end{itemize}
+\end{frame}
+
+%\begin{frame}[fragile]
+%  \begin{itemize} 
+%    \item show up to 1000 rows and all columns
+%<<eval=FALSE,size='small'>>=
+%flights %>% View()
+%# set option to see all columns and fewer rows
+%options(dplyr.width = Inf, dplyr.print_min = 6)
+%# reset options (or just close R)
+%options(dplyr.width = NULL, dplyr.print_min = 10)
+%@
+%  \end{itemize}
+%\end{frame}
+
+\subsection{Plotting: \comm{ggplot2}}
+
+\begin{frame}[fragile]
+  \frametitle{Plotting: \comm{ggplot2}}
+<<eval=FALSE>>=
+library(ggplot2)
+
+flights %>%
+  group_by(dest) %>%
+  summarize(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) %>%
+  filter(delay > 0, count > 20, dest != "HNL") %>%
+  ggplot(mapping = aes(x = dist, y = delay)) +
+    geom_point(aes(size = count), alpha = 1 / 3) +
+    geom_smooth(se = FALSE)
+@
+\end{frame}
+
+\begin{frame}[fragile]
+<<echo=FALSE, message=FALSE, warning=FALSE, out.width='70%'>>=
+library(ggplot2)
+
+flights %>%
+    group_by(dest) %>%
+    summarize(count = n(),
+              dist = mean(distance, na.rm = TRUE),
+              delay = mean(arr_delay, na.rm = TRUE)) %>%
+    filter(delay > 0, count > 20, dest != "HNL") %>%
+    ggplot(mapping = aes(x = dist, y = delay)) +
+    geom_point(aes(size = count), alpha = 1 / 3) +
+    geom_smooth(se = FALSE)
+@
+\end{frame}
+
+\section{Data Visualization: \comm{ggplot2}}
+
+\section{Data Importing and Tidying: \comm{readr}, \comm{lubridate}, \comm{stringr}}
+
+%\section{References}
+%
+%\begin{frame}%[allowframebreaks]
+%  \nocite{*}
+%  \bibliographystyle{apalike}
+%  \bibliography{r_tidy}
+%\end{frame}
+
+\end{document}
+
